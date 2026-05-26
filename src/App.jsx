@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react"
 import FileUpload from "./components/FileUpload"
 import SongInfo from "./components/SongInfo"
 import { readMetadata } from "./utils/readMetadata"
+import AudioPlayer from "./components/AudioPlayer"
 
 function App() {
   const [audioUrl, setAudioUrl] = useState(null)
@@ -54,7 +55,8 @@ function App() {
       <h1>Audio Visualizer</h1>
       <FileUpload onFileSelect={handleFileSelect} />
       <SongInfo fileName={fileName} metadata={metadata} />
-      {audioUrl && <audio ref={audioRef} controls src={audioUrl} />}
+      {audioUrl && <audio ref={audioRef} src={audioUrl} style={{ display: "none" }} />}
+      <AudioPlayer audioRef={audioRef} audioUrl={audioUrl} />
     </main>
   )
 }
