@@ -53,13 +53,24 @@ function FileUpload({ onFileSelect }) {
     setIsDraggingOver(false)
   }
 
+  function handleKeyDown(e) {
+    if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault()
+      inputRef.current.click()
+    }
+  }
+
   return (
     <div
       className={`upload-zone ${isDraggingOver ? "upload-zone--active" : ""}`}
       onClick={() => inputRef.current.click()}
+      onKeyDown={handleKeyDown}
       onDrop={handleDrop}
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
+      role="button"
+      tabIndex={0}
+      aria-label="Upload an audio file by dragging and dropping or clicking to browse"
     >
       <p>Drop an audio file here or click to browse</p>
       <input
