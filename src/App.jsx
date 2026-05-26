@@ -10,13 +10,12 @@ function App() {
   const [audioUrl, setAudioUrl] = useState(null)
   const [fileName, setFileName] = useState("")
   const [metadata, setMetadata] = useState(null)
-
   const audioRef = useRef(null)
   const currentAudioUrlRef = useRef(null)
   const currentCoverUrlRef = useRef(null)
   const metadataRequestIdRef = useRef(0)
   const analyzerData = useAudioAnalyzer(audioRef, audioUrl)
-
+  const [vizMode, setVizMode] = useState("bars")
 
   async function handleFileSelect(file) {
     if (currentAudioUrlRef.current) URL.revokeObjectURL(currentAudioUrlRef.current)
@@ -60,7 +59,13 @@ function App() {
       <FileUpload onFileSelect={handleFileSelect} />
       <SongInfo fileName={fileName} metadata={metadata} />
       {audioUrl && <audio ref={audioRef} src={audioUrl} style={{ display: "none" }} />}
-      {audioUrl && <Visualizer analyzerData={analyzerData} />}
+      <button
+        className="viz-toggle"
+        onClick={() => setVizMode((m) => (m === "bars" ? "radial" : "bars"))}
+      >
+        Mode: {vizMode === "bars" ? "Bars" : "Radial"}
+      </button>
+      {audioUrl && <Visualizer analyzerData={analyzerData} mode={vizMode} />}
       <AudioPlayer audioRef={audioRef} audioUrl={audioUrl} />
     </main>
   )
