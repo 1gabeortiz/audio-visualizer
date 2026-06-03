@@ -10,12 +10,14 @@ function useAudioAnalyzer(audioRef, audioUrl) {
     const audio = audioRef.current
     if (!audio || !audioUrl) return
 
+    // Create one AudioContext for the app lifecycle (browser best practice).
     if (!audioContextRef.current) {
       audioContextRef.current = new window.AudioContext()
     }
 
     const ctx = audioContextRef.current
 
+    // MediaElementSource can only be created once per <audio> element.
     if (!sourceRef.current) {
       sourceRef.current = ctx.createMediaElementSource(audio)
       analyserRef.current = ctx.createAnalyser()

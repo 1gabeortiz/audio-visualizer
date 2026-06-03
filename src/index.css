@@ -87,5 +87,66 @@ body {
   background: #1f1f1f;
 }
 
+.viz-toggle:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
 
+.customizer {
+  margin-top: 14px;
+  padding: 12px;
+  border: 1px solid #333;
+  border-radius: 10px;
+  background: #121212;
+  display: grid;
+  gap: 10px;
+}
+
+.customizer h2 {
+  font-size: 15px;
+  margin: 0 0 4px;
+}
+
+.customizer label {
+  display: grid;
+  gap: 6px;
+  font-size: 14px;
+  color: #ddd;
+}
+
+.customizer input:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.player {
+  margin-top: 16px;
+  display: grid;
+  grid-template-columns: auto auto auto auto 1fr auto auto;
+  gap: 10px;
+  align-items: center;
+}
+
+.player input[type="range"] {
+  width: 100%;
+}
+
+.empty-state {
+  margin-top: 12px;
+  color: #bdbdbd;
+  font-size: 14px;
+}
+
+.privacy-note {
+  margin-top: 14px;
+  font-size: 13px;
+  color: #9a9a9a;
+}
+
+@media (max-width: 900px) {
+  .player {
+    grid-template-columns: 1fr;
+    align-items: stretch;
+  }
+}
 
