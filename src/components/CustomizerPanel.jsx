@@ -1,11 +1,13 @@
 import { useState, useRef } from "react"
-import {
-  BUILTIN_PRESETS,
-  loadSavedPresets,
-  savePreset,
-  deletePreset,
-  sanitizePresetStops,
-} from "../utils/presets"
+ import {
+   BUILTIN_PRESETS,
+   loadSavedPresets,
+   savePreset,
+   deletePreset,
+   sanitizePresetStops,
+   sanitizeVisualizerPreset,
+ } from "../utils/presets"
+
 
 function clamp(value, min, max) {
   return Math.min(max, Math.max(min, value))
@@ -205,6 +207,61 @@ function CustomizerPanel({ settings, onChange, disabled = false }) {
     e.target.value = "" // Reset so the same file can be re-imported
   }
 
+  function handleExportVisualizerPreset() {
+  const data = {
+    colorMode: settings.colorMode,
+    singleColor: settings.singleColor,
+    paletteColors: normalizePaletteStops(settings.paletteColors).map(({ color, position }) => ({
+      color,
+      position,
+    })),
+    hueShift: settings.hueShift,
+    autoCycle: settings.autoCycle,
+    cycleSpeed: settings.cycleSpeed,
+    barCount: settings.barCount,
+    glow: settings.glow,
+    intensity: settings.intensity,
+  }
+
+  const json = JSON.stringify(data, null, 2)
+  const blob = new Blob([json], { type: "application/json" })
+  const url = URL.createObjectURL(blob)
+  const anchor = document.createElement("a")
+  anchor.href = url
+  anchor.download = "visualizer-preset.json"
+  anchor.click()
+  URL.revokeObjectURL(url)
+}
+
+function handleImportVisualizerPreset(e) {
+  const file = e.target.files[0]
+  if (!file) return
+
+  const reader = new FileReader()
+  reader.onload = (evt) => {
+    try {
+      const parsed = JSON.parse(evt.target.result)
+      const sanitized = sanitizeVisualizerPreset(parsed)
+      if (!sanitized) return
+
+      onChange((prev) => ({
+        ...prev,
+        ...sanitized,
+        // Rebuild UI IDs for stop editor
+        paletteColors: sanitized.paletteColors.map((s, i) => ({
+          id: `stop-${i + 1}`,
+          ...s,
+        })),
+      }))
+    } catch {
+      // Invalid JSON - ignore
+    }
+  }
+
+  reader.readAsText(file)
+  e.target.value = ""
+}
+
   return (
     <section className="customizer">
       <h2>Visualizer Controls</h2>
@@ -318,36 +375,51 @@ function CustomizerPanel({ settings, onChange, disabled = false }) {
             const max = isAnchor ? stop.position : paletteStops[index + 1].position - 1
 
             return (
-              <div key={stop.id} className="palette-row">
-                <input
-                  type="color"
-                  value={stop.color}
-                  onInput={(e) => updatePaletteColor(stop.id, e.target.value)}
-                  onChange={(e) => updatePaletteColor(stop.id, e.target.value)}
-                  disabled={disabled}
-                />
-
-                <label className="palette-position">
-                  <span>Position: {stop.position}%</span>
-                  <input
-                    type="range"
-                    min={min}
-                    max={max}
-                    step="1"
-                    value={stop.position}
-                    onChange={(e) => updatePalettePosition(stop.id, e.target.value)}
-                    disabled={disabled || isAnchor}
-                  />
-                </label>
-
-                <button
-                  type="button"
-                  onClick={() => removePaletteStop(stop.id)}
-                  disabled={disabled || isAnchor || paletteStops.length <= 2}
+               <div
+                  key={stop.id}
+                  className="palette-row"
+                  style={{ "--stop-color": stop.color }} // Row accent color matches this stop
                 >
-                  Remove
-                </button>
-              </div>
+                  <label className="palette-color-control">
+                    <span className="palette-stop-label">
+                      Stop {index + 1}
+                      {isAnchor ? " (anchor)" : ""}
+                    </span>
+                
+                    {/* Larger color input improves clickability and makes stop identity obvious */}
+                    <input
+                      className="palette-color-input"
+                      type="color"
+                      value={stop.color}
+                      onInput={(e) => updatePaletteColor(stop.id, e.target.value)}
+                      onChange={(e) => updatePaletteColor(stop.id, e.target.value)}
+                      disabled={disabled}
+                    />
+                
+                    <small className="palette-color-hex">{stop.color.toUpperCase()}</small>
+                  </label>
+                
+                  <label className="palette-position">
+                    <span>Position: {stop.position}%</span>
+                    <input
+                      type="range"
+                      min={min}
+                      max={max}
+                      step="1"
+                      value={stop.position}
+                      onChange={(e) => updatePalettePosition(stop.id, e.target.value)}
+                      disabled={disabled || isAnchor}
+                    />
+                  </label>
+                
+                  <button
+                    type="button"
+                    onClick={() => removePaletteStop(stop.id)}
+                    disabled={disabled || isAnchor || paletteStops.length <= 2}
+                  >
+                    Remove
+                  </button>
+                </div>
             )
           })}
 
@@ -362,20 +434,42 @@ function CustomizerPanel({ settings, onChange, disabled = false }) {
           {/* Export downloads palette.json; Import reads a previously exported file */}
           <div className="preset-io">
             <button type="button" onClick={handleExportPalette} disabled={disabled}>
-              Export JSON
+              Export Palette Preset
             </button>
+
             <button
               type="button"
               onClick={() => importInputRef.current?.click()}
               disabled={disabled}
             >
-              Import JSON
+              Import Palette Preset
             </button>
+
             <input
               ref={importInputRef}
               type="file"
               accept=".json,application/json"
               onChange={handleImportPalette}
+              style={{ display: "none" }}
+            />
+
+            <button type="button" onClick={handleExportVisualizerPreset} disabled={disabled}>
+              Export Full Preset
+            </button>
+            
+            <button
+              type="button"
+              onClick={() => document.getElementById("import-full-preset-input")?.click()}
+              disabled={disabled}
+            >
+              Import Full Preset
+            </button>
+            
+            <input
+              id="import-full-preset-input"
+              type="file"
+              accept=".json,application/json"
+              onChange={handleImportVisualizerPreset}
               style={{ display: "none" }}
             />
           </div>

@@ -150,3 +150,41 @@ export function deletePreset(id) {
     return loadSavedPresets()
   }
 }
+
+
+function clamp(value, min, max) {
+  return Math.min(max, Math.max(min, value))
+}
+
+function sanitizeHexColor(value, fallback = "#7c4dff") {
+  return typeof value === "string" && /^#[0-9a-f]{6}$/i.test(value)
+    ? value.toLowerCase()
+    : fallback
+}
+
+/**
+* Validates and normalizes a full visualizer preset object.
+* Returns a safe preset object or null if required structure is invalid.
+*/
+export function sanitizeVisualizerPreset(raw) {
+  if (!raw || typeof raw !== "object") return null
+
+  const colorMode = ["rainbow", "single", "palette"].includes(raw.colorMode)
+    ? raw.colorMode
+    : "rainbow"
+
+  const paletteColors = sanitizePresetStops(raw.paletteColors)
+  if (!paletteColors) return null
+
+  return {
+    colorMode,
+    singleColor: sanitizeHexColor(raw.singleColor, "#7c4dff"),
+    paletteColors,
+    hueShift: clamp(Number(raw.hueShift) || 0, 0, 360),
+    autoCycle: Boolean(raw.autoCycle),
+    cycleSpeed: clamp(Number(raw.cycleSpeed) || 45, 5, 240),
+    barCount: clamp(Number(raw.barCount) || 96, 32, 160),
+    glow: clamp(Number(raw.glow) || 14, 0, 30),
+    intensity: clamp(Number(raw.intensity) || 1, 0.4, 2),
+  }
+}
