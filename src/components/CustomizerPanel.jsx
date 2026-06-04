@@ -1,3 +1,11 @@
+import { useState, useRef } from "react"
+import {
+  BUILTIN_PRESETS,
+  loadSavedPresets,
+  savePreset,
+  deletePreset,
+  sanitizePresetStops,
+} from "../utils/presets"
 
 function clamp(value, min, max) {
   return Math.min(max, Math.max(min, value))
@@ -35,6 +43,12 @@ function CustomizerPanel({ settings, onChange, disabled = false }) {
   const defaultSingleColor = "#7c4dff"
   const singleColorValue = settings.singleColor || defaultSingleColor
 
+  // Preset management state (local — doesn't need to live in App)
+  const [savedPresets, setSavedPresets] = useState(loadSavedPresets)
+  const [selectedPresetKey, setSelectedPresetKey] = useState("")
+  const [presetNameInput, setPresetNameInput] = useState("")
+  const importInputRef = useRef(null)
+
   function update(key, value) {
     onChange((prev) => ({ ...prev, [key]: value }))
   }
@@ -44,6 +58,13 @@ function CustomizerPanel({ settings, onChange, disabled = false }) {
   }
 
   const paletteStops = normalizePaletteStops(settings.paletteColors)
+
+  // CSS gradient string derived from normalized stops — used for the preview bar.
+  const gradientStyle = {
+    background: `linear-gradient(to right, ${paletteStops
+      .map((s) => `${s.color} ${s.position}%`)
+      .join(", ")})`,
+  }
 
   function updatePaletteColor(id, nextColor) {
     const nextStops = paletteStops.map((stop) =>
@@ -107,6 +128,83 @@ function CustomizerPanel({ settings, onChange, disabled = false }) {
     setPaletteStops(nextStops)
   }
 
+  // ── Preset handlers ─────────────────────────────────────────────────────────
+
+  function handleLoadPreset() {
+    if (!selectedPresetKey) return
+
+    let raw = null
+    if (selectedPresetKey.startsWith("builtin:")) {
+      const id = selectedPresetKey.slice("builtin:".length)
+      raw = BUILTIN_PRESETS.find((p) => p.id === id)?.stops ?? null
+    } else if (selectedPresetKey.startsWith("saved:")) {
+      const id = selectedPresetKey.slice("saved:".length)
+      raw = savedPresets.find((p) => p.id === id)?.stops ?? null
+    }
+
+    if (!raw) return
+    const sanitized = sanitizePresetStops(raw)
+    if (!sanitized) return
+
+    // Re-attach stable IDs before passing to the stop editor
+    const stops = sanitized.map((s, i) => ({ id: `stop-${i + 1}`, ...s }))
+    setPaletteStops(stops)
+  }
+
+  function handleSavePreset() {
+    const name = presetNameInput.trim()
+    if (!name) return
+    // Persist only semantic data; IDs are UI-internal and not needed in storage
+    const stopsToSave = paletteStops.map(({ color, position }) => ({ color, position }))
+    const next = savePreset(name, stopsToSave)
+    setSavedPresets(next)
+    setPresetNameInput("")
+    // Auto-select the newly saved preset so the user can immediately delete it if wanted
+    const saved = next.find((p) => p.name === name)
+    if (saved) setSelectedPresetKey(`saved:${saved.id}`)
+  }
+
+  function handleDeletePreset() {
+    if (!selectedPresetKey.startsWith("saved:")) return
+    const id = selectedPresetKey.slice("saved:".length)
+    const next = deletePreset(id)
+    setSavedPresets(next)
+    setSelectedPresetKey("")
+  }
+
+  // ── Export / Import ──────────────────────────────────────────────────────────
+
+  function handleExportPalette() {
+    const data = paletteStops.map(({ color, position }) => ({ color, position }))
+    const json = JSON.stringify(data, null, 2)
+    const blob = new Blob([json], { type: "application/json" })
+    const url = URL.createObjectURL(blob)
+    const anchor = document.createElement("a")
+    anchor.href = url
+    anchor.download = "palette.json"
+    anchor.click()
+    URL.revokeObjectURL(url)
+  }
+
+  function handleImportPalette(e) {
+    const file = e.target.files[0]
+    if (!file) return
+    const reader = new FileReader()
+    reader.onload = (evt) => {
+      try {
+        const parsed = JSON.parse(evt.target.result)
+        const sanitized = sanitizePresetStops(parsed)
+        if (!sanitized) return
+        const stops = sanitized.map((s, i) => ({ id: `stop-${i + 1}`, ...s }))
+        setPaletteStops(stops)
+      } catch {
+        // Invalid JSON — silently ignore
+      }
+    }
+    reader.readAsText(file)
+    e.target.value = "" // Reset so the same file can be re-imported
+  }
+
   return (
     <section className="customizer">
       <h2>Visualizer Controls</h2>
@@ -141,6 +239,78 @@ function CustomizerPanel({ settings, onChange, disabled = false }) {
       {settings.colorMode === "palette" && (
         <div className="palette-editor">
           <label>Palette Stops</label>
+
+          {/* Presets: load built-ins or saved palettes, save current, delete saved */}
+          <div className="presets-section">
+            <span className="presets-label">Presets</span>
+
+            <div className="presets-controls">
+              <select
+                value={selectedPresetKey}
+                onChange={(e) => setSelectedPresetKey(e.target.value)}
+                disabled={disabled}
+              >
+                <option value="">— Choose a preset —</option>
+                <optgroup label="Built-in">
+                  {BUILTIN_PRESETS.map((p) => (
+                    <option key={p.id} value={`builtin:${p.id}`}>
+                      {p.name}
+                    </option>
+                  ))}
+                </optgroup>
+                {savedPresets.length > 0 && (
+                  <optgroup label="Saved">
+                    {savedPresets.map((p) => (
+                      <option key={p.id} value={`saved:${p.id}`}>
+                        {p.name}
+                      </option>
+                    ))}
+                  </optgroup>
+                )}
+              </select>
+
+              <button
+                type="button"
+                onClick={handleLoadPreset}
+                disabled={disabled || !selectedPresetKey}
+              >
+                Load
+              </button>
+
+              {selectedPresetKey.startsWith("saved:") && (
+                <button
+                  type="button"
+                  onClick={handleDeletePreset}
+                  disabled={disabled}
+                  className="preset-btn--danger"
+                >
+                  Delete
+                </button>
+              )}
+            </div>
+
+            <div className="presets-save">
+              <input
+                type="text"
+                placeholder="Name this palette…"
+                value={presetNameInput}
+                onChange={(e) => setPresetNameInput(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && handleSavePreset()}
+                disabled={disabled}
+                maxLength={40}
+              />
+              <button
+                type="button"
+                onClick={handleSavePreset}
+                disabled={disabled || !presetNameInput.trim()}
+              >
+                Save
+              </button>
+            </div>
+          </div>
+
+          {/* Live gradient preview derived from current stops */}
+          <div className="palette-preview" style={gradientStyle} aria-hidden="true" />
 
           {paletteStops.map((stop, index) => {
             const isAnchor = index === 0 || index === paletteStops.length - 1
@@ -188,6 +358,27 @@ function CustomizerPanel({ settings, onChange, disabled = false }) {
           >
             + Add Color Stop
           </button>
+
+          {/* Export downloads palette.json; Import reads a previously exported file */}
+          <div className="preset-io">
+            <button type="button" onClick={handleExportPalette} disabled={disabled}>
+              Export JSON
+            </button>
+            <button
+              type="button"
+              onClick={() => importInputRef.current?.click()}
+              disabled={disabled}
+            >
+              Import JSON
+            </button>
+            <input
+              ref={importInputRef}
+              type="file"
+              accept=".json,application/json"
+              onChange={handleImportPalette}
+              style={{ display: "none" }}
+            />
+          </div>
 
           <small>First/last stops are locked at 0% and 100%. Max 8 stops.</small>
         </div>

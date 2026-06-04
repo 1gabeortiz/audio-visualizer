@@ -152,35 +152,6 @@ body {
 
  .palette-editor {
    display: grid;
-   gap: 8px;
- }
- 
- .palette-row {
-   display: grid;
-   grid-template-columns: auto 1fr auto;
-   gap: 8px;
-   align-items: center;
- }
- 
- .palette-row button,
- .palette-editor > button {
-   min-height: 32px;
-   padding: 6px 10px;
-   border: 1px solid #444;
-   border-radius: 8px;
-   background: #1a1a1a;
-   color: #f1f1f1;
-   cursor: pointer;
- }
- 
- .palette-row button:disabled,
- .palette-editor > button:disabled {
-   opacity: 0.5;
-   cursor: not-allowed;
- }
-
-  .palette-editor {
-   display: grid;
    gap: 10px;
  }
  
@@ -213,6 +184,86 @@ body {
    cursor: not-allowed;
  }
 
+.palette-preview {
+  height: 14px;
+  border-radius: 7px;
+  border: 1px solid #2a2a2a;
+}
+
+.presets-section {
+  display: grid;
+  gap: 8px;
+  padding: 10px;
+  border: 1px solid #2a2a2a;
+  border-radius: 8px;
+  background: #0e0e0e;
+}
+
+.presets-label {
+  font-size: 11px;
+  color: #777;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+}
+
+.presets-controls {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  gap: 8px;
+  align-items: center;
+}
+
+.presets-save {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 8px;
+  align-items: center;
+}
+
+.presets-save input[type="text"] {
+  padding: 6px 10px;
+  border: 1px solid #3d3d3d;
+  border-radius: 8px;
+  background: #1a1a1a;
+  color: #f1f1f1;
+  font-size: 14px;
+  min-width: 0;
+}
+
+.preset-io {
+  display: flex;
+  gap: 8px;
+}
+
+.presets-section button {
+  min-height: 32px;
+  padding: 6px 10px;
+  border: 1px solid #444;
+  border-radius: 8px;
+  background: #1a1a1a;
+  color: #f1f1f1;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.presets-section button:hover:not(:disabled) {
+  border-color: #666;
+  background: #222;
+}
+
+.presets-section button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.preset-btn--danger {
+  color: #ff6b6b !important;
+  border-color: #5a2020 !important;
+}
+
+.preset-btn--danger:hover:not(:disabled) {
+  background: #2a1010 !important;
+}
 
 
 .player {
