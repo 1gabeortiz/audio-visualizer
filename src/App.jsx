@@ -68,6 +68,8 @@ function App() {
   const [fileName, setFileName] = useState("")
   const [lastSongName, setLastSongName] = useState(loadLastSongName)
   const [metadata, setMetadata] = useState(null)
+  const [isLoadingMetadata, setIsLoadingMetadata] = useState(false)
+
 
   // Keep refs to generated object URLs so we can revoke them and avoid memory leaks.
   const audioRef = useRef(null)
@@ -117,15 +119,19 @@ function App() {
     setFileName(nextName)
     setLastSongName(nextName)
     setMetadata(null)
+    setIsLoadingMetadata(true)
 
     const nextMetadata = await readMetadata(file)
     if (metadataRequestIdRef.current !== nextRequestId) {
-      if (nextMetadata.coverUrl) URL.revokeObjectURL(nextMetadata.coverUrl)
-      return
-    }
+    if (nextMetadata.coverUrl) URL.revokeObjectURL(nextMetadata.coverUrl)
+    setIsLoadingMetadata(false)
+    return
+  }
+
 
     currentCoverUrlRef.current = nextMetadata.coverUrl
     setMetadata(nextMetadata)
+    setIsLoadingMetadata(false)
   }
 
   useEffect(() => {
@@ -188,6 +194,10 @@ function App() {
       <h1>Audio Visualizer</h1>
       <FileUpload onFileSelect={handleFileSelect} />
       <SongInfo fileName={fileName} metadata={metadata} />
+
+      {isLoadingMetadata && (
+      <p className="privacy-note">Reading metadata...</p>)}
+
 
       {/* Hidden audio element is the playback engine for Web Audio + custom controls. */}
       {audioUrl && <audio ref={audioRef} src={audioUrl} style={{ display: "none" }} />}
