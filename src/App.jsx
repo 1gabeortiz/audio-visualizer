@@ -163,14 +163,19 @@ function App() {
     if (trackId === activeTrackId) setActiveTrackId(nextActiveTrackId)
   }
 
-  function handleReorderById(sourceTrackId, targetTrackId) {
+  function handleReorderToIndex(sourceTrackId, rawInsertIndex) {
     setQueue((previousQueue) => {
       const fromIndex = previousQueue.findIndex((track) => track.id === sourceTrackId)
-      const toIndex = previousQueue.findIndex((track) => track.id === targetTrackId)
-      if (fromIndex === -1 || toIndex === -1) return previousQueue
+      if (fromIndex === -1) return previousQueue
+      const boundedInsertIndex = Math.max(0, Math.min(rawInsertIndex, previousQueue.length))
+      let toIndex = boundedInsertIndex
+      // When moving downward, removing source shifts index left by one.
+      if (fromIndex < toIndex) toIndex -= 1
+      if (toIndex === fromIndex) return previousQueue
       return moveQueueItem(previousQueue, fromIndex, toIndex)
     })
   }
+
 
   function handleMoveTrackUp(trackId) {
     setQueue((previousQueue) => {
@@ -326,7 +331,7 @@ function App() {
         onAddFiles={enqueueFiles}
         onPlayTrack={playTrackById}
         onRemoveTrack={handleRemoveTrack}
-        onReorderById={handleReorderById}
+        onReorderToIndex={handleReorderToIndex}
         onMoveUp={handleMoveTrackUp}
         onMoveDown={handleMoveTrackDown}
       />
