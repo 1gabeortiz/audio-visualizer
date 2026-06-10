@@ -50,6 +50,8 @@ function CustomizerPanel({ settings, onChange, disabled = false }) {
   const [selectedPresetKey, setSelectedPresetKey] = useState("")
   const [presetNameInput, setPresetNameInput] = useState("")
   const importInputRef = useRef(null)
+  const importFullPresetInputRef = useRef(null)
+  const [presetIoMessage, setPresetIoMessage] = useState("")
 
   function update(key, value) {
     onChange((prev) => ({ ...prev, [key]: value }))
@@ -186,6 +188,7 @@ function CustomizerPanel({ settings, onChange, disabled = false }) {
     anchor.download = "palette.json"
     anchor.click()
     URL.revokeObjectURL(url)
+    setPresetIoMessage("Palette preset exported.")
   }
 
   function handleImportPalette(e) {
@@ -196,11 +199,15 @@ function CustomizerPanel({ settings, onChange, disabled = false }) {
       try {
         const parsed = JSON.parse(evt.target.result)
         const sanitized = sanitizePresetStops(parsed)
-        if (!sanitized) return
+        if (!sanitized) {
+          setPresetIoMessage("Invalid palette preset file.")
+          return
+        }
         const stops = sanitized.map((s, i) => ({ id: `stop-${i + 1}`, ...s }))
         setPaletteStops(stops)
+        setPresetIoMessage("Palette preset imported.")
       } catch {
-        // Invalid JSON — silently ignore
+        setPresetIoMessage("Invalid JSON file.")
       }
     }
     reader.readAsText(file)
@@ -242,7 +249,10 @@ function handleImportVisualizerPreset(e) {
     try {
       const parsed = JSON.parse(evt.target.result)
       const sanitized = sanitizeVisualizerPreset(parsed)
-      if (!sanitized) return
+      if (!sanitized) {
+        setPresetIoMessage("Invalid visualizer preset file.")
+        return
+      }
 
       onChange((prev) => ({
         ...prev,
@@ -253,8 +263,9 @@ function handleImportVisualizerPreset(e) {
           ...s,
         })),
       }))
+      setPresetIoMessage("Visualizer preset imported.")
     } catch {
-      // Invalid JSON - ignore
+      setPresetIoMessage("Invalid JSON file.")
     }
   }
 
@@ -459,20 +470,25 @@ function handleImportVisualizerPreset(e) {
             
             <button
               type="button"
-              onClick={() => document.getElementById("import-full-preset-input")?.click()}
+              onClick={() => importFullPresetInputRef.current?.click()}
               disabled={disabled}
             >
               Import Full Preset
             </button>
             
             <input
-              id="import-full-preset-input"
+              ref={importFullPresetInputRef}
               type="file"
               accept=".json,application/json"
               onChange={handleImportVisualizerPreset}
               style={{ display: "none" }}
             />
           </div>
+          {presetIoMessage && (
+            <p className="preset-io-message" role="status" aria-live="polite">
+              {presetIoMessage}
+            </p>
+          )}
 
           <small>First/last stops are locked at 0% and 100%. Max 8 stops.</small>
         </div>

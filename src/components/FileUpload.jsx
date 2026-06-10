@@ -6,6 +6,7 @@ const MAX_SIZE_MB = 150
 function FileUpload({ onFileSelect }) {
   const inputRef = useRef(null)
   const [isDraggingOver, setIsDraggingOver] = useState(false)
+  const [errorMessage, setErrorMessage] = useState("")
 
   // Prevent browser from opening dropped files anywhere on the page
   useEffect(() => {
@@ -22,13 +23,14 @@ function FileUpload({ onFileSelect }) {
 
   function validateFile(file) {
     if (!ACCEPTED_TYPES.includes(file.type)) {
-      alert("Please upload an MP3 or WAV file.")
+      setErrorMessage("Please upload an MP3 or WAV file.")
       return false
     }
     if (file.size > MAX_SIZE_MB * 1024 * 1024) {
-      alert(`File must be under ${MAX_SIZE_MB}MB.`)
+      setErrorMessage(`File must be under ${MAX_SIZE_MB}MB.`)
       return false
     }
+    setErrorMessage("")
     return true
   }
 
@@ -61,26 +63,33 @@ function FileUpload({ onFileSelect }) {
   }
 
   return (
-    <div
-      className={`upload-zone ${isDraggingOver ? "upload-zone--active" : ""}`}
-      onClick={() => inputRef.current.click()}
-      onKeyDown={handleKeyDown}
-      onDrop={handleDrop}
-      onDragOver={handleDragOver}
-      onDragLeave={handleDragLeave}
-      role="button"
-      tabIndex={0}
-      aria-label="Upload an audio file by dragging and dropping or clicking to browse"
-    >
-      <p>Drop an audio file here or click to browse</p>
-      <input
-        ref={inputRef}
-        type="file"
-        accept="audio/*"
-        onChange={handleFileChange}
-        style={{ display: "none" }}
-      />
-    </div>
+    <>
+      <div
+        className={`upload-zone ${isDraggingOver ? "upload-zone--active" : ""}`}
+        onClick={() => inputRef.current.click()}
+        onKeyDown={handleKeyDown}
+        onDrop={handleDrop}
+        onDragOver={handleDragOver}
+        onDragLeave={handleDragLeave}
+        role="button"
+        tabIndex={0}
+        aria-label="Upload an audio file by dragging and dropping or clicking to browse"
+      >
+        <p>Drop an audio file here or click to browse</p>
+        <input
+          ref={inputRef}
+          type="file"
+          accept="audio/*"
+          onChange={handleFileChange}
+          style={{ display: "none" }}
+        />
+      </div>
+      {errorMessage && (
+        <p className="upload-error" role="status" aria-live="polite">
+          {errorMessage}
+        </p>
+      )}
+    </>
   )
 }
 
