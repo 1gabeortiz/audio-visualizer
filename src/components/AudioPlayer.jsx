@@ -7,7 +7,14 @@ function formatTime(seconds) {
   return `${mins}:${secs.toString().padStart(2, "0")}`
 }
 
-function AudioPlayer({ audioRef, audioUrl }) {
+function AudioPlayer({
+  audioRef,
+  audioUrl,
+  onNextTrack,
+  onPreviousTrack,
+  hasNextTrack = false,
+  hasPreviousTrack = false,
+}) {
   const [isPlaying, setIsPlaying] = useState(false)
   const [currentTime, setCurrentTime] = useState(0)
   const [duration, setDuration] = useState(0)
@@ -129,13 +136,23 @@ function AudioPlayer({ audioRef, audioUrl }) {
           e.preventDefault()
           audio.muted = !audio.muted
           break
+        case "KeyN":
+          if (!hasNextTrack || !onNextTrack) return
+          e.preventDefault()
+          onNextTrack()
+          break
+        case "KeyP":
+          if (!hasPreviousTrack || !onPreviousTrack) return
+          e.preventDefault()
+          onPreviousTrack()
+          break
         default:
           break
       }
     }
     window.addEventListener("keydown", onKeyDown)
     return () => window.removeEventListener("keydown", onKeyDown)
-  }, [audioRef, audioUrl])
+  }, [audioRef, audioUrl, hasNextTrack, hasPreviousTrack, onNextTrack, onPreviousTrack])
 
 
 
@@ -189,35 +206,54 @@ function AudioPlayer({ audioRef, audioUrl }) {
   return (
     <section className="player">
       <div className="player-controls">
-    <button
-      className="player-btn player-btn--icon"
-      type="button"
-      onClick={restartTrack}
-      aria-label="Restart track"
-      title="Restart"
-    >
-      ⏮
-    </button>
-    <button
-      className={`player-btn player-btn--primary player-btn--icon ${isPlaying 
-  ? "player-btn--active" : ""}`}
-      type="button"
-      onClick={togglePlay}
-      aria-label={isPlaying ? "Pause" : "Play"}
-      title={isPlaying ? "Pause (Space)" : "Play (Space)"}
-    >
-      {isPlaying ? "⏸" : "▶"}
-    </button>
-    <button
-      className="player-btn player-btn--icon"
-      type="button"
-      onClick={skipToEnd}
-      aria-label="Skip to end"
-      title="Skip to end"
-    >
-      ⏭
-    </button>
-  </div>
+        <button
+          className="player-btn player-btn--icon"
+          type="button"
+          onClick={restartTrack}
+          aria-label="Restart track"
+          title="Restart"
+        >
+          ⏮
+        </button>
+        <button
+          className={`player-btn player-btn--primary player-btn--icon ${isPlaying ? "player-btn--active" : ""}`}
+          type="button"
+          onClick={togglePlay}
+          aria-label={isPlaying ? "Pause" : "Play"}
+          title={isPlaying ? "Pause (Space)" : "Play (Space)"}
+        >
+          {isPlaying ? "⏸" : "▶"}
+        </button>
+        <button
+          className="player-btn player-btn--icon"
+          type="button"
+          onClick={skipToEnd}
+          aria-label="Skip to end"
+          title="Skip to end"
+        >
+          ⏭
+        </button>
+        <button
+          className="player-btn player-btn--icon"
+          type="button"
+          onClick={onPreviousTrack}
+          disabled={!hasPreviousTrack}
+          aria-label="Play previous track"
+          title="Previous track (P)"
+        >
+          ↶
+        </button>
+        <button
+          className="player-btn player-btn--icon"
+          type="button"
+          onClick={onNextTrack}
+          disabled={!hasNextTrack}
+          aria-label="Play next track"
+          title="Next track (N)"
+        >
+          ↷
+        </button>
+      </div>
 
       <span className="player-time">{formatTime(currentTime)}</span>
       <input
@@ -243,7 +279,7 @@ function AudioPlayer({ audioRef, audioUrl }) {
         />
       </label>
       <p className="player-shortcuts">
-        Shortcuts: Space play/pause, ←/→ seek, ↑/↓ volume, M mute
+        Shortcuts: Space play/pause, ←/→ seek, ↑/↓ volume, M mute, P/N previous/next
       </p>
 
     </section>

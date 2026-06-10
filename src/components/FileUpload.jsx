@@ -1,12 +1,13 @@
 import { useRef, useEffect, useState } from "react"
 
 const ACCEPTED_TYPES = ["audio/mpeg", "audio/wav"]
+const ACCEPTED_EXTENSIONS = [".mp3", ".wav"]
 const MAX_SIZE_MB = 150
 
-function FileUpload({ onFileSelect }) {
-  const inputRef = useRef(null)
+function FileUpload({ onFilesSelect }) {
+  const fileInputRef = useRef(null)
   const [isDraggingOver, setIsDraggingOver] = useState(false)
-  const [errorMessage, setErrorMessage] = useState("")
+  const [statusMessage, setStatusMessage] = useState("")
 
   // Prevent browser from opening dropped files anywhere on the page
   useEffect(() => {
@@ -21,29 +22,63 @@ function FileUpload({ onFileSelect }) {
     }
   }, [])
 
+  function isAcceptedAudioFile(file) {
+    const lowerName = (file.name || "").toLowerCase()
+    const hasAcceptedExtension = ACCEPTED_EXTENSIONS.some((ext) => lowerName.endsWith(ext))
+    const hasAcceptedType = ACCEPTED_TYPES.includes(file.type)
+    return hasAcceptedType || hasAcceptedExtension
+  }
+
   function validateFile(file) {
-    if (!ACCEPTED_TYPES.includes(file.type)) {
-      setErrorMessage("Please upload an MP3 or WAV file.")
-      return false
+    if (!isAcceptedAudioFile(file)) {
+      return "Only MP3 and WAV files are supported."
     }
     if (file.size > MAX_SIZE_MB * 1024 * 1024) {
-      setErrorMessage(`File must be under ${MAX_SIZE_MB}MB.`)
-      return false
+      return `File "${file.name}" exceeds ${MAX_SIZE_MB}MB.`
     }
-    setErrorMessage("")
-    return true
+    return null
+  }
+
+  function collectAcceptedFiles(files) {
+    const accepted = []
+    const rejected = []
+
+    for (const file of files) {
+      const error = validateFile(file)
+      if (error) {
+        rejected.push(error)
+      } else {
+        accepted.push(file)
+      }
+    }
+
+    if (!accepted.length && rejected.length) {
+      setStatusMessage(rejected[0])
+      return
+    }
+
+    if (accepted.length && rejected.length) {
+      setStatusMessage(`Added ${accepted.length} file(s). Skipped ${rejected.length}.`)
+    } else if (accepted.length) {
+      setStatusMessage(`Added ${accepted.length} file(s) to queue.`)
+    } else {
+      setStatusMessage("No supported audio files found.")
+    }
+
+    if (accepted.length) onFilesSelect(accepted)
   }
 
   function handleFileChange(e) {
-    const file = e.target.files[0]
-    if (file && validateFile(file)) onFileSelect(file)
+    const files = Array.from(e.target.files || [])
+    collectAcceptedFiles(files)
+    e.target.value = ""
   }
 
   function handleDrop(e) {
     e.preventDefault()
     setIsDraggingOver(false)
-    const file = e.dataTransfer.files[0]
-    if (file && validateFile(file)) onFileSelect(file)
+    const files = Array.from(e.dataTransfer.files || [])
+    collectAcceptedFiles(files)
   }
 
   function handleDragOver(e) {
@@ -58,7 +93,7 @@ function FileUpload({ onFileSelect }) {
   function handleKeyDown(e) {
     if (e.key === "Enter" || e.key === " ") {
       e.preventDefault()
-      inputRef.current.click()
+      fileInputRef.current?.click()
     }
   }
 
@@ -66,7 +101,7 @@ function FileUpload({ onFileSelect }) {
     <>
       <div
         className={`upload-zone ${isDraggingOver ? "upload-zone--active" : ""}`}
-        onClick={() => inputRef.current.click()}
+        onClick={() => fileInputRef.current?.click()}
         onKeyDown={handleKeyDown}
         onDrop={handleDrop}
         onDragOver={handleDragOver}
@@ -75,18 +110,21 @@ function FileUpload({ onFileSelect }) {
         tabIndex={0}
         aria-label="Upload an audio file by dragging and dropping or clicking to browse"
       >
-        <p>Drop an audio file here or click to browse</p>
+        <p>Drop audio files here or click to browse</p>
+        <p className="upload-hint">You can add multiple files to build a queue.</p>
         <input
-          ref={inputRef}
+          ref={fileInputRef}
           type="file"
           accept="audio/*"
+          multiple
           onChange={handleFileChange}
           style={{ display: "none" }}
         />
       </div>
-      {errorMessage && (
+
+      {statusMessage && (
         <p className="upload-error" role="status" aria-live="polite">
-          {errorMessage}
+          {statusMessage}
         </p>
       )}
     </>

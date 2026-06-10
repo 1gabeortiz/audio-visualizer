@@ -6,10 +6,17 @@ import AudioPlayer from "./components/AudioPlayer"
 import Visualizer from "./components/Visualizer"
 import useAudioAnalyzer from "./hooks/useAudioAnalyzer"
 import CustomizerPanel from "./components/CustomizerPanel"
+import QueuePanel from "./components/QueuePanel"
 import { sanitizeVisualizerPreset } from "./utils/presets"
+import {
+  getNextTrackId,
+  getPreviousTrackId,
+  moveQueueItem,
+} from "./utils/queue"
 
 const VISUALIZER_SETTINGS_STORAGE_KEY = "audio-viz-current-settings"
 const VISUALIZER_MODE_STORAGE_KEY = "audio-viz-mode"
+const LAST_SONG_NAME_STORAGE_KEY = "audio-viz-last-song-name"
 
 function loadInitialVisualizerMode() {
   try {
@@ -20,6 +27,10 @@ function loadInitialVisualizerMode() {
   }
 }
 
+function createTrackId() {
+  if (typeof crypto !== "undefined" && crypto.randomUUID) return crypto.randomUUID()
+  return `track-${Date.now()}-${Math.floor(Math.random() * 100000)}`
+}
 
 function getDefaultVisualizerSettings() {
   return {
@@ -53,7 +64,6 @@ function loadInitialVisualizerSettings() {
   }
 }
 
-const LAST_SONG_NAME_STORAGE_KEY = "audio-viz-last-song-name"
 function loadLastSongName() {
   try {
     return localStorage.getItem(LAST_SONG_NAME_STORAGE_KEY) || ""
@@ -62,29 +72,41 @@ function loadLastSongName() {
   }
 }
 
+function createTrack(file) {
+  return {
+    id: createTrackId(),
+    file,
+    name: file.name.replace(/\.[^/.]+$/, ""),
+    audioUrl: URL.createObjectURL(file),
+    metadata: null,
+    status: "loading",
+    errorMessage: null,
+  }
+}
+
+function revokeTrackResources(track) {
+  if (track.audioUrl) URL.revokeObjectURL(track.audioUrl)
+  if (track.metadata?.coverUrl) URL.revokeObjectURL(track.metadata.coverUrl)
+}
 
 function App() {
-  const [audioUrl, setAudioUrl] = useState(null)
-  const [fileName, setFileName] = useState("")
+  const [queue, setQueue] = useState([])
+  const [activeTrackId, setActiveTrackId] = useState(null)
   const [lastSongName, setLastSongName] = useState(loadLastSongName)
-  const [metadata, setMetadata] = useState(null)
-  const [isLoadingMetadata, setIsLoadingMetadata] = useState(false)
 
-
-  // Keep refs to generated object URLs so we can revoke them and avoid memory leaks.
   const audioRef = useRef(null)
-  const currentAudioUrlRef = useRef(null)
-  const currentCoverUrlRef = useRef(null)
+  const queueRef = useRef(queue)
 
-  // Prevent older async metadata reads from overwriting a newer song selection.
-  const metadataRequestIdRef = useRef(0)
-
-  const analyzerData = useAudioAnalyzer(audioRef, audioUrl)
+  const activeTrack = queue.find((track) => track.id === activeTrackId) || null
+  const activeAudioUrl = activeTrack?.audioUrl || null
+  const analyzerData = useAudioAnalyzer(audioRef, activeAudioUrl)
   const [vizMode, setVizMode] = useState(loadInitialVisualizerMode)
-  // Controls consumed by the visualizer + customizer panel.
   const [visualizerSettings, setVisualizerSettings] = useState(loadInitialVisualizerSettings)
 
-  const hasAudio = Boolean(audioUrl)
+  const hasAudio = Boolean(activeTrack)
+  const hasPreviousTrack = Boolean(getPreviousTrackId(queue, activeTrackId))
+  const hasNextTrack = Boolean(getNextTrackId(queue, activeTrackId))
+  const isLoadingMetadata = activeTrack?.status === "loading"
 
   function handleResetSavedUi() {
     const confirmed = window.confirm(
@@ -103,48 +125,142 @@ function App() {
     setLastSongName("")
   }
 
-
-  async function handleFileSelect(file) {
-    if (currentAudioUrlRef.current) URL.revokeObjectURL(currentAudioUrlRef.current)
-    if (currentCoverUrlRef.current) URL.revokeObjectURL(currentCoverUrlRef.current)
-
-    const nextAudioUrl = URL.createObjectURL(file)
-    const nextRequestId = metadataRequestIdRef.current + 1
-    metadataRequestIdRef.current = nextRequestId
-
-    currentAudioUrlRef.current = nextAudioUrl
-    setAudioUrl(nextAudioUrl)
-
-    const nextName = file.name.replace(/\.[^/.]+$/, "")
-    setFileName(nextName)
-    setLastSongName(nextName)
-    setMetadata(null)
-    setIsLoadingMetadata(true)
-
-    const nextMetadata = await readMetadata(file)
-    if (metadataRequestIdRef.current !== nextRequestId) {
-    if (nextMetadata.coverUrl) URL.revokeObjectURL(nextMetadata.coverUrl)
-    setIsLoadingMetadata(false)
-    return
+  function playTrackById(trackId) {
+    if (!trackId) return
+    setActiveTrackId(trackId)
   }
 
+  function playNextTrack() {
+    setActiveTrackId((previousId) => {
+      const nextTrackId = getNextTrackId(queue, previousId)
+      return nextTrackId ?? previousId
+    })
+  }
 
-    currentCoverUrlRef.current = nextMetadata.coverUrl
-    setMetadata(nextMetadata)
-    setIsLoadingMetadata(false)
+  function playPreviousTrack() {
+    setActiveTrackId((previousId) => {
+      const previousTrackId = getPreviousTrackId(queue, previousId)
+      return previousTrackId ?? previousId
+    })
+  }
+
+  function handleRemoveTrack(trackId) {
+    let nextActiveTrackId = activeTrackId
+    setQueue((previousQueue) => {
+      const removeIndex = previousQueue.findIndex((track) => track.id === trackId)
+      if (removeIndex === -1) return previousQueue
+
+      const trackToRemove = previousQueue[removeIndex]
+      revokeTrackResources(trackToRemove)
+
+      const nextQueue = previousQueue.filter((track) => track.id !== trackId)
+      if (trackId === activeTrackId) {
+        const replacement = nextQueue[removeIndex] || nextQueue[removeIndex - 1] || null
+        nextActiveTrackId = replacement ? replacement.id : null
+      }
+      return nextQueue
+    })
+    if (trackId === activeTrackId) setActiveTrackId(nextActiveTrackId)
+  }
+
+  function handleReorderById(sourceTrackId, targetTrackId) {
+    setQueue((previousQueue) => {
+      const fromIndex = previousQueue.findIndex((track) => track.id === sourceTrackId)
+      const toIndex = previousQueue.findIndex((track) => track.id === targetTrackId)
+      if (fromIndex === -1 || toIndex === -1) return previousQueue
+      return moveQueueItem(previousQueue, fromIndex, toIndex)
+    })
+  }
+
+  function handleMoveTrackUp(trackId) {
+    setQueue((previousQueue) => {
+      const index = previousQueue.findIndex((track) => track.id === trackId)
+      if (index <= 0) return previousQueue
+      return moveQueueItem(previousQueue, index, index - 1)
+    })
+  }
+
+  function handleMoveTrackDown(trackId) {
+    setQueue((previousQueue) => {
+      const index = previousQueue.findIndex((track) => track.id === trackId)
+      if (index === -1 || index >= previousQueue.length - 1) return previousQueue
+      return moveQueueItem(previousQueue, index, index + 1)
+    })
+  }
+
+  function enqueueFiles(files) {
+    if (!files.length) return
+    const tracks = files.map(createTrack)
+
+    setQueue((previousQueue) => [...previousQueue, ...tracks])
+    setActiveTrackId((previousTrackId) => previousTrackId ?? tracks[0].id)
+    setLastSongName(tracks[tracks.length - 1].name)
+
+    tracks.forEach((track) => {
+      readMetadata(track.file)
+        .then((nextMetadata) => {
+          setQueue((previousQueue) => {
+            const index = previousQueue.findIndex((item) => item.id === track.id)
+            if (index === -1) {
+              if (nextMetadata?.coverUrl) URL.revokeObjectURL(nextMetadata.coverUrl)
+              return previousQueue
+            }
+
+            const nextQueue = [...previousQueue]
+            nextQueue[index] = {
+              ...nextQueue[index],
+              metadata: nextMetadata,
+              status: "ready",
+              errorMessage: null,
+            }
+            return nextQueue
+          })
+        })
+        .catch(() => {
+          setQueue((previousQueue) =>
+            previousQueue.map((item) =>
+              item.id === track.id
+                ? {
+                    ...item,
+                    status: "error",
+                    errorMessage: "Could not read metadata",
+                  }
+                : item
+            )
+          )
+        })
+    })
   }
 
   useEffect(() => {
-    if (audioUrl && audioRef.current) {
+    if (activeAudioUrl && audioRef.current) {
       audioRef.current.load()
       audioRef.current.play()
     }
-  }, [audioUrl])
+  }, [activeAudioUrl])
+
+  useEffect(() => {
+    const audio = audioRef.current
+    if (!audio) return
+
+    function onEnded() {
+      setActiveTrackId((previousTrackId) => {
+        const nextTrackId = getNextTrackId(queue, previousTrackId)
+        return nextTrackId ?? previousTrackId
+      })
+    }
+
+    audio.addEventListener("ended", onEnded)
+    return () => audio.removeEventListener("ended", onEnded)
+  }, [queue])
+
+  useEffect(() => {
+    queueRef.current = queue
+  }, [queue])
 
   useEffect(() => {
     return () => {
-      if (currentAudioUrlRef.current) URL.revokeObjectURL(currentAudioUrlRef.current)
-      if (currentCoverUrlRef.current) URL.revokeObjectURL(currentCoverUrlRef.current)
+      queueRef.current.forEach((track) => revokeTrackResources(track))
     }
   }, [])
 
@@ -179,28 +295,41 @@ function App() {
   }, [visualizerSettings])
 
   useEffect(() => {
-  try {
-    if (lastSongName) {
-      localStorage.setItem(LAST_SONG_NAME_STORAGE_KEY, lastSongName)
+    try {
+      if (lastSongName) {
+        localStorage.setItem(LAST_SONG_NAME_STORAGE_KEY, lastSongName)
+      } else {
+        localStorage.removeItem(LAST_SONG_NAME_STORAGE_KEY)
+      }
+    } catch {
+      // Ignore storage write errors.
     }
-  } catch {
-    // Ignore storage write errors.
-  }
   }, [lastSongName])
 
 
   return (
     <main className="app">
       <h1>Audio Visualizer</h1>
-      <FileUpload onFileSelect={handleFileSelect} />
-      <SongInfo fileName={fileName} metadata={metadata} />
+      <FileUpload onFilesSelect={enqueueFiles} />
+      <SongInfo fileName={activeTrack?.name || ""} metadata={activeTrack?.metadata} />
 
       {isLoadingMetadata && (
       <p className="privacy-note">Reading metadata...</p>)}
 
 
       {/* Hidden audio element is the playback engine for Web Audio + custom controls. */}
-      {audioUrl && <audio ref={audioRef} src={audioUrl} style={{ display: "none" }} />}
+      {activeAudioUrl && <audio ref={audioRef} src={activeAudioUrl} style={{ display: "none" }} />}
+
+      <QueuePanel
+        queue={queue}
+        activeTrackId={activeTrackId}
+        onAddFiles={enqueueFiles}
+        onPlayTrack={playTrackById}
+        onRemoveTrack={handleRemoveTrack}
+        onReorderById={handleReorderById}
+        onMoveUp={handleMoveTrackUp}
+        onMoveDown={handleMoveTrackDown}
+      />
 
       <button
         className="viz-toggle"
@@ -221,7 +350,7 @@ function App() {
         </button>
 
 
-      {audioUrl && (
+      {activeAudioUrl && (
         <Visualizer
           analyzerData={analyzerData}
           mode={vizMode}
@@ -241,7 +370,14 @@ function App() {
 
       <p className="privacy-note">Your audio files never leave your browser.</p>
 
-      <AudioPlayer audioRef={audioRef} audioUrl={audioUrl} />
+      <AudioPlayer
+        audioRef={audioRef}
+        audioUrl={activeAudioUrl}
+        hasPreviousTrack={hasPreviousTrack}
+        hasNextTrack={hasNextTrack}
+        onPreviousTrack={playPreviousTrack}
+        onNextTrack={playNextTrack}
+      />
     </main>
   )
 }
