@@ -14,10 +14,10 @@ function QueuePanel({
   onMoveDown,
 }) {
   const [draggingTrackId, setDraggingTrackId] = useState(null)
-  const [dropIndex, setDropIndex] = useState(null)
-  const [dropPosition, setDropPosition] = useState("before")
+  const [hoverInsertIndex, setHoverInsertIndex] = useState(null)
   const [dragPreview, setDragPreview] = useState(null)
   const [dragItemOffset, setDragItemOffset] = useState(0)
+  const queueListRef = useRef(null)
   const emptyDragImageRef = useRef(null)
   const dragMotionRef = useRef({
     lastX: 0,
@@ -35,28 +35,40 @@ function QueuePanel({
 
   if (!queue.length) return null
 
-  function computeDropPosition(e, index) {
-    const rect = e.currentTarget.getBoundingClientRect()
-    const midpoint = rect.top + rect.height / 2
-    return e.clientY < midpoint ? { index, position: "before" } : { index, position: "after" }
-  }
-
   function handleDropOnItem(e, index) {
     e.preventDefault()
     const sourceId = draggingTrackId || e.dataTransfer.getData("text/plain")
     if (!sourceId) return
-    const insertIndex = dropPosition === "after" ? index + 1 : index
+    const insertIndex = hoverInsertIndex == null ? index : hoverInsertIndex
     onReorderToIndex(sourceId, insertIndex)
     setDraggingTrackId(null)
-    setDropIndex(null)
+    setHoverInsertIndex(null)
     setDragPreview(null)
     setDragItemOffset(0)
   }
 
   const draggingSourceIndex =
     draggingTrackId == null ? -1 : queue.findIndex((track) => track.id === draggingTrackId)
-  const hoverInsertIndex =
-    dropIndex == null ? null : dropPosition === "after" ? dropIndex + 1 : dropIndex
+
+  function computeInsertIndexFromCursor(clientY) {
+    if (!queueListRef.current) return queue.length
+    const itemElements = Array.from(queueListRef.current.querySelectorAll(".queue-item"))
+    let insertIndex = queue.length
+
+    for (const element of itemElements) {
+      const itemIndex = Number(element.dataset.index)
+      if (Number.isNaN(itemIndex) || itemIndex === draggingSourceIndex) continue
+      const rect = element.getBoundingClientRect()
+      const midpoint = rect.top + rect.height / 2
+      if (clientY < midpoint) {
+        insertIndex = itemIndex
+        break
+      }
+      insertIndex = Math.max(insertIndex, itemIndex + 1)
+    }
+
+    return insertIndex
+  }
 
   return (
     <section className="queue-panel">
@@ -77,7 +89,17 @@ function QueuePanel({
           />
         </label>
       </div>
-      <ol className="queue-list">
+      <ol
+        ref={queueListRef}
+        className="queue-list"
+        onDragOver={(e) => {
+          e.preventDefault()
+          if (draggingSourceIndex === -1) return
+          e.dataTransfer.dropEffect = "move"
+          setHoverInsertIndex(computeInsertIndexFromCursor(e.clientY))
+        }}
+        onDrop={(e) => handleDropOnItem(e, queue.length)}
+      >
         {queue.map((track, index) => {
           const isActive = track.id === activeTrackId
           const isDraggingSource = track.id === draggingTrackId
@@ -101,6 +123,7 @@ function QueuePanel({
           return (
             <li
               key={track.id}
+              data-index={index}
               className={`queue-item ${isActive ? "queue-item--active" : ""} ${
                 isDraggingSource ? "queue-item--dragging-source" : ""
               }`}
@@ -162,7 +185,7 @@ function QueuePanel({
               }}
               onDragEnd={() => {
                 setDraggingTrackId(null)
-                setDropIndex(null)
+                  setHoverInsertIndex(null)
                 setDragPreview(null)
                 setDragItemOffset(0)
                 dragMotionRef.current = {
@@ -173,14 +196,7 @@ function QueuePanel({
                   vy: 0,
                 }
               }}
-              onDragOver={(e) => {
-                e.preventDefault()
-                const next = computeDropPosition(e, index)
-                setDropIndex(next.index)
-                setDropPosition(next.position)
-                e.dataTransfer.dropEffect = "move"
-              }}
-              onDrop={(e) => handleDropOnItem(e, index)}
+                onDrop={(e) => handleDropOnItem(e, index)}
             >
               <div className="queue-item-main">
                 <span className="queue-index">{index + 1}.</span>
