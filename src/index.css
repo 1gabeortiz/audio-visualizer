@@ -38,10 +38,18 @@ body {
 }
 
 .app {
-  max-width: 760px;
-  margin: 32px auto;
-  padding: 0 16px;
+  width: min(1200px, calc(100vw - 32px));
+  margin: clamp(12px, 2.4vh, 28px) auto;
+  padding: 0 clamp(10px, 1.8vw, 18px);
+  display: grid;
+  gap: clamp(10px, 1.6vh, 16px);
+  align-content: start;
 }
+.app > * {
+  min-width: 0;
+  
+}
+
 
 .song-info {
   display: grid;
@@ -80,6 +88,12 @@ body {
 .queue-panel h2 {
   margin: 0;
   font-size: 15px;
+}
+
+.visualizer-canvas {
+  width: 100%;
+  height: clamp(260px, 42vh, 520px);
+  display: block;
 }
 
 .queue-header {
@@ -193,11 +207,12 @@ body {
   background: #111;
 }
 
-.visualizer-canvas {
+ .visualizer-canvas {
   width: 100%;
-  height: 260px;
+  height: clamp(280px, 44vh, 540px);
   display: block;
 }
+
 
 .viz-toggle {
   margin-top: 14px;
@@ -218,6 +233,12 @@ body {
 .viz-toggle:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+}
+
+.visualizer-controls-stack {
+  display: grid;
+  gap: 10px;
+  min-width: 0;
 }
 
 .customizer {
@@ -606,9 +627,8 @@ body {
     border-radius: 8px;
   }
 
-
 .reset-ui-btn {
-  margin-top: 10px;
+  margin-top: 0;
   padding: 8px 12px;
   border: 1px solid #5a2020;
   border-radius: 8px;
@@ -616,7 +636,9 @@ body {
   color: #ffd7d7;
   cursor: pointer;
   transition: border-color 0.2s, background-color 0.2s;
+  justify-self: start;
 }
+
 .reset-ui-btn:hover {
   border-color: #7a2b2b;
   background: #341414;
@@ -665,5 +687,61 @@ body {
   letter-spacing: 0.06em;
 }
 
+@media (min-width: 1200px) {
+  .visualizer-canvas {
+    height: clamp(340px, 50vh, 620px);
+  }
+  .queue-panel,
+  .customizer {
+    max-height: clamp(220px, 30vh, 420px);
+  }
+  }
+  @media (max-height: 760px) {
+  .visualizer-canvas {
+    height: clamp(240px, 38vh, 420px);
+  }
+  .queue-panel,
+  .customizer {
+    max-height: clamp(160px, 24vh, 280px);
+  }
+}
+
+@media (max-height: 760px), (max-width: 980px) {
+  .app {
+    gap: 10px;
+  }
+  .visualizer-canvas {
+    height: clamp(200px, 34vh, 320px);
+  }
+  .queue-panel,
+  .customizer {
+    max-height: clamp(150px, 24vh, 240px);
+    overflow: auto;
+  }
+  .player {
+    padding-top: 4px;
+    border-top: 1px solid #2c2c2c;
+  }
+  .visualizer-controls-stack {
+    gap: 8px;
+  }
+  .reset-ui-btn {
+    width: 100%;
+    justify-self: stretch;
+  }
+
+}
 
 
+/* Let .app gap control vertical spacing consistently */
+.song-info,
+.now-playing-panel,
+.queue-panel,
+.viz-toggle,
+.customizer,
+.visualizer-wrapper,
+.player,
+.empty-state,
+.privacy-note {
+  margin-top: 0;
+}
