@@ -108,8 +108,8 @@ function App() {
   const [isShuffleOn, setIsShuffleOn] = useState(false)
 
   const hasAudio = Boolean(activeTrack)
-  const hasPreviousTrack = Boolean(getPreviousTrackId(queue, activeTrackId))
-  const hasNextTrack = Boolean(getNextTrackId(queue, activeTrackId))
+  const hasPreviousTrack = canGoPrevious()
+  const hasNextTrack = canGoNext()
   const isLoadingMetadata = activeTrack?.status === "loading"
 
   const [queueStatus, setQueueStatus] = useState(null) // { id, text } | null
@@ -148,33 +148,24 @@ function App() {
   }
 
   function playNextTrack() {
-    setActiveTrackId((previousId) => getNextTrackIdByMode(queue, previousId))
-  }
-
-  function playPreviousTrack() {
     setActiveTrackId((previousId) => {
-      const previousTrackId = getPreviousTrackId(queue, previousId)
-      return previousTrackId ?? previousId
+      const nextId = resolveNextTrackId(previousId)
+      return nextId ?? previousId
     })
   }
+  function playPreviousTrack() {
+    setActiveTrackId((previousId) => {
+      const prevId = resolvePreviousTrackId(previousId)
+      return prevId ?? previousId
+    })
+  }
+
   
   function getRandomTrackId(tracks, excludeTrackId) {
     const candidates = tracks.filter((track) => track.id !== excludeTrackId)
     if (!candidates.length) return excludeTrackId
     const index = Math.floor(Math.random() * candidates.length)
     return candidates[index].id
-  }
-
-  function getNextTrackIdByMode(tracks, currentId) {
-    if (!tracks.length) return currentId
-    if (isShuffleOn) {
-      return getRandomTrackId(tracks, currentId)
-    }
-    const nextTrackId = getNextTrackId(tracks, currentId)
-    if (!nextTrackId && repeatMode === "all") {
-      return tracks[0].id
-    }
-    return nextTrackId ?? currentId
   }
 
   function getFileFingerprint(file) {
@@ -200,14 +191,57 @@ function App() {
     if (trackId === activeTrackId) setActiveTrackId(nextActiveTrackId)
   }
 
-  function handleReorderById(sourceTrackId, targetTrackId) {
+  function canGoNext() {
+    if (queue.length <= 1) return false
+    if (isShuffleOn) return true
+    if (repeatMode === "all") return true
+    return Boolean(getNextTrackId(queue, activeTrackId))
+  }
+
+  function canGoPrevious() {
+    if (queue.length <= 1) return false
+    if (repeatMode === "all") return true
+    return Boolean(getPreviousTrackId(queue, activeTrackId))
+  }
+
+  function resolveNextTrackId(currentId, { isEnded = false } = {}) {
+    if (!queue.length) return null
+    if (!currentId) return queue[0].id
+    if (isEnded && repeatMode === "one") {
+      return currentId
+    }
+    if (isShuffleOn && queue.length > 1) {
+      return getRandomTrackId(queue, currentId)
+    }
+    const linearNextId = getNextTrackId(queue, currentId)
+    if (linearNextId) return linearNextId
+    if (repeatMode === "all") return queue[0].id
+    return currentId
+  }
+
+  function resolvePreviousTrackId(currentId) {
+    if (!queue.length) return null
+    if (!currentId) return queue[0].id
+    const linearPrevId = getPreviousTrackId(queue, currentId)
+    if (linearPrevId) return linearPrevId
+    if (repeatMode === "all" && queue.length > 0) {
+      return queue[queue.length - 1].id
+    }
+    return currentId
+  }
+
+  function handleReorderToIndex(sourceTrackId, rawInsertIndex) {
     setQueue((previousQueue) => {
       const fromIndex = previousQueue.findIndex((track) => track.id === sourceTrackId)
-      const toIndex = previousQueue.findIndex((track) => track.id === targetTrackId)
-      if (fromIndex === -1 || toIndex === -1) return previousQueue
+      if (fromIndex === -1) return previousQueue
+      const boundedInsertIndex = Math.max(0, Math.min(rawInsertIndex, previousQueue.length))
+      let toIndex = boundedInsertIndex
+      if (fromIndex < toIndex) toIndex -= 1
+      if (toIndex === fromIndex) return previousQueue
       return moveQueueItem(previousQueue, fromIndex, toIndex)
     })
   }
+
 
   function handleMoveTrackUp(trackId) {
     setQueue((previousQueue) => {
@@ -318,28 +352,77 @@ function App() {
     }, 2200)
   }
 
+  function handleClearQueue() {
+    if (!queue.length) return
+    const confirmed = window.confirm("Clear the entire queue?")
+    if (!confirmed) return
+    setQueue((previousQueue) => {
+      previousQueue.forEach((track) => revokeTrackResources(track))
+      return []
+    })
+    setActiveTrackId(null)
+  }
+  function handleKeepCurrentOnly() {
+    if (!activeTrackId || queue.length <= 1) return
+    const confirmed = window.confirm("Remove all queued songs except the current one?")
+    if (!confirmed) return
+    setQueue((previousQueue) => {
+      const current = previousQueue.find((track) => track.id === 
+  activeTrackId)
+      if (!current) return []
+      previousQueue.forEach((track) => {
+        if (track.id !== activeTrackId) revokeTrackResources(track)
+      })
+      return [current]
+    })
+    if (audioRef.current) {
+      audioRef.current.pause()
+      audioRef.current.currentTime = 0
+    }
+  }
+
+
 
   useEffect(() => {
     if (activeAudioUrl && audioRef.current) {
       audioRef.current.load()
-      audioRef.current.play()
+      audioRef.current.play().catch(() => {
+        // Browser may block autoplay until user interaction.
+      })
     }
   }, [activeAudioUrl])
 
   useEffect(() => {
     const audio = audioRef.current
     if (!audio) return
+    audio.loop = repeatMode === "one"
+    return () => {
+      audio.loop = false
+    }
+  }, [repeatMode, activeAudioUrl])
+
+  useEffect(() => {
+    const audio = audioRef.current
+    if (!audio) return
     function onEnded() {
-      if (repeatMode === "one") {
-        audio.currentTime = 0
-        audio.play()
-        return
-      }
-      setActiveTrackId((previousId) => getNextTrackIdByMode(queue, previousId))
+      setActiveTrackId((previousId) => {
+        if (!queue.length) return previousId
+        if (!previousId) return queue[0].id
+        if (isShuffleOn && queue.length > 1) return getRandomTrackId(queue, previousId)
+
+        const linearNextId = getNextTrackId(queue, previousId)
+        if (linearNextId) return linearNextId
+        if (repeatMode === "all") return queue[0].id
+
+        const nextId = previousId
+        return nextId ?? previousId
+      })
     }
     audio.addEventListener("ended", onEnded)
     return () => audio.removeEventListener("ended", onEnded)
   }, [queue, repeatMode, isShuffleOn])
+
+
 
   useEffect(() => {
     queueRef.current = queue
@@ -408,7 +491,13 @@ function App() {
       <h1>Audio Visualizer</h1>
       <FileUpload onFilesSelect={enqueueFiles} />
       {queueStatus && (
-        <p key={queueStatus.id} className="upload-error" role="status" aria-live="polite">
+        <p
+          key={queueStatus.id}
+          className="upload-error"
+          role="status"
+          aria-live="polite"
+          aria-atomic="true"
+        >
           {queueStatus.text}
         </p>
       )}
@@ -447,27 +536,26 @@ function App() {
         onAddFiles={enqueueFiles}
         onPlayTrack={playTrackById}
         onRemoveTrack={handleRemoveTrack}
-        onReorderById={handleReorderById}
+        onReorderToIndex={handleReorderToIndex}
         onMoveUp={handleMoveTrackUp}
         onMoveDown={handleMoveTrackDown}
+        onClearQueue={handleClearQueue}
+        onKeepCurrentOnly={handleKeepCurrentOnly}
       />
 
       <section className="visualizer-controls-stack">
         <button
-          className="viz-toggle"
-          onClick={() => setVizMode((m) => (m === "bars" ? "radial" : 
-      "bars"))}
-          disabled={!hasAudio}
-        >
-          Mode: {vizMode === "bars" ? "Bars" : "Radial"}
-        </button>
-        <CustomizerPanel
-          settings={visualizerSettings}
-          onChange={setVisualizerSettings}
-          disabled={!hasAudio}
-        />
-        <button className="reset-ui-btn" onClick={handleResetSavedUi} 
-      type="button">
+        onClick={() => setVizMode((m) => (m === "bars" ? "radial" : "bars"))}
+        disabled={!hasAudio}
+      >
+        Mode: {vizMode === "bars" ? "Bars" : "Radial"}
+      </button>
+      <CustomizerPanel
+        settings={visualizerSettings}
+        onChange={setVisualizerSettings}
+        disabled={!hasAudio}
+      />
+        <button className="reset-ui-btn" onClick={handleResetSavedUi} type="button">
           Reset Saved UI
         </button>
       </section>

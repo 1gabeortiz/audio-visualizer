@@ -150,13 +150,36 @@ function AudioPlayer({
           e.preventDefault()
           onPreviousTrack()
           break
+        case "KeyS":
+          e.preventDefault()
+          onShuffleToggle?.()
+          break
+        case "KeyR":
+          e.preventDefault()
+          if (onRepeatModeChange) {
+            const order = ["off", "one", "all"]
+            const currentIndex = order.indexOf(repeatMode)
+            const nextMode = order[(currentIndex + 1) % order.length]
+            onRepeatModeChange(nextMode)
+          }
+          break
         default:
           break
       }
     }
     window.addEventListener("keydown", onKeyDown)
     return () => window.removeEventListener("keydown", onKeyDown)
-  }, [audioRef, audioUrl, hasNextTrack, hasPreviousTrack, onNextTrack, onPreviousTrack])
+  }, [
+    audioRef,
+    audioUrl,
+    hasNextTrack,
+    hasPreviousTrack,
+    onNextTrack,
+    onPreviousTrack,
+    onShuffleToggle,
+    repeatMode,
+    onRepeatModeChange,
+  ])
 
 
 
@@ -232,6 +255,7 @@ function AudioPlayer({
           type="button"
           onClick={togglePlay}
           aria-label={isPlaying ? "Pause" : "Play"}
+          aria-pressed={isPlaying}
           title={isPlaying ? "Pause (Space)" : "Play (Space)"}
         >
           {isPlaying ? "⏸" : "▶"}
@@ -242,6 +266,7 @@ function AudioPlayer({
           }`}
           type="button"
           onClick={onShuffleToggle}
+          aria-pressed={isShuffleOn}
           aria-label={`Shuffle ${isShuffleOn ? "on" : "off"}`}
           title={isShuffleOn ? "Shuffle on" : "Shuffle off"}
         >
@@ -282,7 +307,8 @@ function AudioPlayer({
           }`}
           type="button"
           onClick={cycleRepeatMode}
-          aria-label={`Repeat mode: ${repeatMode}`}
+          aria-pressed={repeatMode !== "off"}
+          aria-label={`Repeat mode: ${repeatMode === "off" ? "off" : repeatMode === "one" ? "one" : "all"}`}
           title={
             repeatMode === "off"
               ? "Repeat off"
@@ -304,6 +330,7 @@ function AudioPlayer({
         min="0"
         max={duration || 0}
         step="0.01"
+        aria-label="Seek position"
         value={currentTime}
         onChange={handleSeek}
       />
@@ -317,12 +344,15 @@ function AudioPlayer({
           max="1"
           step="0.01"
           value={volume}
+          aria-label="Volume"
           onChange={handleVolume}
         />
       </label>
       <p className="player-shortcuts">
-        Shortcuts: Space play/pause, ←/→ seek, ↑/↓ volume, M mute, P/N previous/next
+        Shortcuts: Space play/pause, ←/→ seek, ↑/↓ volume, M mute, P/N 
+      previous/next, S shuffle, R repeat
       </p>
+
 
     </section>
   )
