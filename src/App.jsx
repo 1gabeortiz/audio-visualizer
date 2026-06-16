@@ -543,25 +543,23 @@ function App() {
         onKeepCurrentOnly={handleKeepCurrentOnly}
       />
 
-
-
-      <button
-        className="viz-toggle"
+      <section className="visualizer-controls-stack">
+        <button
         onClick={() => setVizMode((m) => (m === "bars" ? "radial" : "bars"))}
         disabled={!hasAudio}
       >
         Mode: {vizMode === "bars" ? "Bars" : "Radial"}
       </button>
-
       <CustomizerPanel
         settings={visualizerSettings}
         onChange={setVisualizerSettings}
         disabled={!hasAudio}
       />
-
-       <button className="reset-ui-btn" onClick={handleResetSavedUi} type="button">
+        <button className="reset-ui-btn" onClick={handleResetSavedUi} type="button">
           Reset Saved UI
         </button>
+      </section>
+
 
 
       {activeAudioUrl && (
