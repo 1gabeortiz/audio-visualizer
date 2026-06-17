@@ -484,115 +484,101 @@ function App() {
     }
   }, [])
 
-
-
   return (
     <main className="app">
-      <h1>Audio Visualizer</h1>
-      <FileUpload onFilesSelect={enqueueFiles} />
-      {queueStatus && (
-        <p
-          key={queueStatus.id}
-          className="upload-error"
-          role="status"
-          aria-live="polite"
-          aria-atomic="true"
-        >
-          {queueStatus.text}
-        </p>
-      )}
-      <SongInfo fileName={activeTrack?.name || ""} metadata={activeTrack?.metadata} />
-      {activeTrack && (
-      <section className="now-playing-panel">
-          <p className="now-playing-line">
-            <span className="now-playing-label">Now Playing:</span>{" "}
-            {activeTrack.metadata?.title?.trim() || activeTrack.name}
+      <section className="app-top">
+        <h1>Audio Visualizer</h1>
+        <FileUpload onFilesSelect={enqueueFiles} />
+        {queueStatus && (
+          <p
+            key={queueStatus.id}
+            className="upload-error"
+            role="status"
+            aria-live="polite"
+            aria-atomic="true"
+          >
+            {queueStatus.text}
           </p>
-          <p className="now-playing-line">
-            <span className="now-playing-label">Up Next:</span>{" "}
-            {upNextTrack ? (upNextTrack.metadata?.title?.trim() || upNextTrack.name) : "None"}
-          </p>
-          <div className="playback-mode-chips">
-            <span className={`mode-chip ${isShuffleOn ? "mode-chip--active" : ""}`}>
-              Shuffle: {isShuffleOn ? "On" : "Off"}
-            </span>
-            <span className={`mode-chip ${repeatMode !== "off" ? "mode-chip--active" : ""}`}>
-              Repeat: {repeatMode === "off" ? "Off" : repeatMode === "one" ? "One" : "All"}
-            </span>
-          </div>
-        </section>
-      )}
-
-      {isLoadingMetadata && (
-      <p className="privacy-note">Reading metadata...</p>)}
-
-
-      {/* Hidden audio element is the playback engine for Web Audio + custom controls. */}
-      {activeAudioUrl && <audio ref={audioRef} src={activeAudioUrl} style={{ display: "none" }} />}
-
-      <QueuePanel
-        queue={queue}
-        activeTrackId={activeTrackId}
-        onAddFiles={enqueueFiles}
-        onPlayTrack={playTrackById}
-        onRemoveTrack={handleRemoveTrack}
-        onReorderToIndex={handleReorderToIndex}
-        onMoveUp={handleMoveTrackUp}
-        onMoveDown={handleMoveTrackDown}
-        onClearQueue={handleClearQueue}
-        onKeepCurrentOnly={handleKeepCurrentOnly}
-      />
-
-      <section className="visualizer-controls-stack">
-        <button
-          className="viz-toggle"
-          onClick={() => setVizMode((m) => (m === "bars" ? "radial" : "bars"))}
-        >
-          Mode: {vizMode === "bars" ? "Bars" : "Radial"}
-        </button>
-        <CustomizerPanel
-          settings={visualizerSettings}
-          onChange={setVisualizerSettings}
-        />
-        <button className="reset-ui-btn" onClick={handleResetSavedUi} type="button">
-          Reset Saved UI
-        </button>
+        )}
       </section>
-
-
-
-      {activeAudioUrl && (
-        <Visualizer
-          analyzerData={analyzerData}
-          mode={vizMode}
-          settings={visualizerSettings}
-        />
-      )}
-
-      {!hasAudio && (
-        <>
-          <p className="empty-state">Upload an audio file to start the visualizer.</p>
-          {lastSongName && (
-            <p className="privacy-note">Last uploaded: {lastSongName}</p>
+      {/* Hidden audio element remains global playback engine */}
+      {activeAudioUrl && <audio ref={audioRef} src={activeAudioUrl} style={{ display: "none" }} />}
+      <div className="app-shell">
+        <aside className="shell-left">
+          <QueuePanel
+            queue={queue}
+            activeTrackId={activeTrackId}
+            onAddFiles={enqueueFiles}
+            onPlayTrack={playTrackById}
+            onRemoveTrack={handleRemoveTrack}
+            onReorderToIndex={handleReorderToIndex}
+            onMoveUp={handleMoveTrackUp}
+            onMoveDown={handleMoveTrackDown}
+            onClearQueue={handleClearQueue}
+            onKeepCurrentOnly={handleKeepCurrentOnly}
+          />
+        </aside>
+        <section className="shell-center">
+          <SongInfo fileName={activeTrack?.name || ""} metadata={activeTrack?.metadata} />
+          {activeTrack && (
+            <section className="now-playing-panel">
+              <p className="now-playing-line">
+                <span className="now-playing-label">Now Playing:</span>{" "}
+                {activeTrack.metadata?.title?.trim() || activeTrack.name}
+              </p>
+              <p className="now-playing-line">
+                <span className="now-playing-label">Up Next:</span>{" "}
+                {upNextTrack ? (upNextTrack.metadata?.title?.trim() || upNextTrack.name) : "None"}
+              </p>
+              <div className="playback-mode-chips">
+                <span className={`mode-chip ${isShuffleOn ? "mode-chip--active" : ""}`}>
+                  Shuffle: {isShuffleOn ? "On" : "Off"}
+                </span>
+                <span className={`mode-chip ${repeatMode !== "off" ? "mode-chip--active" : ""}`}>
+                  Repeat: {repeatMode === "off" ? "Off" : repeatMode === "one" ? "One" : "All"}
+                </span>
+              </div>
+            </section>
           )}
-        </>
-      )}
-
-
-      <p className="privacy-note">Your audio files never leave your browser.</p>
-
-      <AudioPlayer
-        audioRef={audioRef}
-        audioUrl={activeAudioUrl}
-        hasPreviousTrack={hasPreviousTrack}
-        hasNextTrack={hasNextTrack}
-        onPreviousTrack={playPreviousTrack}
-        onNextTrack={playNextTrack}
-        repeatMode={repeatMode}
-        onRepeatModeChange={setRepeatMode}
-        isShuffleOn={isShuffleOn}
-        onShuffleToggle={() => setIsShuffleOn((prev) => !prev)}
-      />
+          {isLoadingMetadata && <p className="privacy-note">Reading metadata...</p>}
+          {activeAudioUrl && (
+            <Visualizer analyzerData={analyzerData} mode={vizMode} settings={visualizerSettings} />
+          )}
+          {!hasAudio && (
+            <>
+              <p className="empty-state">Upload an audio file to start the visualizer.</p>
+              {lastSongName && <p className="privacy-note">Last uploaded: {lastSongName}</p>}
+            </>
+          )}
+          <AudioPlayer
+            audioRef={audioRef}
+            audioUrl={activeAudioUrl}
+            hasPreviousTrack={hasPreviousTrack}
+            hasNextTrack={hasNextTrack}
+            onPreviousTrack={playPreviousTrack}
+            onNextTrack={playNextTrack}
+            repeatMode={repeatMode}
+            onRepeatModeChange={setRepeatMode}
+            isShuffleOn={isShuffleOn}
+            onShuffleToggle={() => setIsShuffleOn((prev) => !prev)}
+          />
+          <p className="privacy-note">Your audio files never leave your browser.</p>
+        </section>
+        <aside className="shell-right">
+          <section className="visualizer-controls-stack">
+            <button
+              className="viz-toggle"
+              onClick={() => setVizMode((m) => (m === "bars" ? "radial" : "bars"))}
+            >
+              Mode: {vizMode === "bars" ? "Bars" : "Radial"}
+            </button>
+            <CustomizerPanel settings={visualizerSettings} onChange={setVisualizerSettings} />
+            <button className="reset-ui-btn" onClick={handleResetSavedUi} type="button">
+              Reset Saved UI
+            </button>
+          </section>
+        </aside>
+      </div>
     </main>
   )
 }

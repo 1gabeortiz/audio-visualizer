@@ -17,6 +17,7 @@ function QueuePanel({
   const [hoverInsertIndex, setHoverInsertIndex] = useState(null)
   const [dragPreview, setDragPreview] = useState(null)
   const [dragItemOffset, setDragItemOffset] = useState(0)
+  const [isCollapsed, setIsCollapsed] = useState(false)
   const queueListRef = useRef(null)
   const emptyDragImageRef = useRef(null)
   const dragMotionRef = useRef({
@@ -63,11 +64,24 @@ function QueuePanel({
     setDragItemOffset(0)
   }
   return (
-    <section className="queue-panel" aria-label="Playback queue">
+    <section
+      className={`queue-panel ${isCollapsed ? "queue-panel--collapsed" : ""}`}
+      aria-label="Playback queue"
+    >
       <div className="queue-header">
         <h2>Queue ({queue.length})</h2>
         <div className="queue-header-actions">
           <button
+            type="button"
+            className="queue-action-btn queue-collapse-btn"
+            onClick={() => setIsCollapsed((prev) => !prev)}
+            aria-expanded={!isCollapsed}
+            aria-controls="queue-body"
+            title={isCollapsed ? "Expand queue" : "Collapse queue"}
+          >
+            {isCollapsed ? "Expand" : "Collapse"}
+          </button>
+           <button
             type="button"
             className="queue-action-btn"
             onClick={onKeepCurrentOnly}
@@ -103,152 +117,159 @@ function QueuePanel({
           </label>
         </div>
       </div>
-      <ol
-        ref={queueListRef}
-        className="queue-list"
-        onDragOver={(e) => {
-          e.preventDefault()
-          if (draggingSourceIndex === -1) return
-          e.dataTransfer.dropEffect = "move"
-          setHoverInsertIndex(computeInsertIndexFromCursor(e.clientY))
-        }}
-        onDrop={handleDropOnList}
-      >
-        {queue.map((track, index) => {
-          const isActive = track.id === activeTrackId
-          const isDraggingSource = track.id === draggingTrackId
-          const title = track.metadata?.title?.trim() || track.name
-          const subtitle = [track.metadata?.artist, track.metadata?.album]
-            .filter(Boolean)
-            .join(" — ")
-          let shiftY = 0
-          if (
-            draggingSourceIndex !== -1 &&
-            hoverInsertIndex != null &&
-            index !== draggingSourceIndex &&
-            dragItemOffset > 0
-          ) {
-            if (draggingSourceIndex < hoverInsertIndex) {
-              if (index > draggingSourceIndex && index < hoverInsertIndex) shiftY = -dragItemOffset
-            } else if (draggingSourceIndex > hoverInsertIndex) {
-              if (index >= hoverInsertIndex && index < draggingSourceIndex) shiftY = dragItemOffset
+      <div id="queue-body" className="queue-body" hidden={isCollapsed}>
+        <ol
+          ref={queueListRef}
+          className="queue-list"
+          onDragOver={(e) => {
+            e.preventDefault()
+            if (draggingSourceIndex === -1) return
+            e.dataTransfer.dropEffect = "move"
+            setHoverInsertIndex(computeInsertIndexFromCursor(e.clientY))
+          }}
+          onDrop={handleDropOnList}
+        >
+          {queue.map((track, index) => {
+            const isActive = track.id === activeTrackId
+            const isDraggingSource = track.id === draggingTrackId
+            const title = track.metadata?.title?.trim() || track.name
+            const subtitle = [track.metadata?.artist, track.metadata?.album]
+              .filter(Boolean)
+              .join(" — ")
+            let shiftY = 0
+            if (
+              draggingSourceIndex !== -1 &&
+              hoverInsertIndex != null &&
+              index !== draggingSourceIndex &&
+              dragItemOffset > 0
+            ) {
+              if (draggingSourceIndex < hoverInsertIndex) {
+                if (index > draggingSourceIndex && index < hoverInsertIndex) shiftY = -dragItemOffset
+              } else if (draggingSourceIndex > hoverInsertIndex) {
+                if (index >= hoverInsertIndex && index < draggingSourceIndex) shiftY = dragItemOffset
+              }
             }
-          }
-          return (
-            <li
-              key={track.id}
-              data-index={index}
-              className={`queue-item ${isActive ? "queue-item--active" : ""} ${
-                isDraggingSource ? "queue-item--dragging-source" : ""
-              }`}
-              style={shiftY !== 0 ? { transform: `translateY(${shiftY}px)` } : undefined}
-              draggable
-              onDragStart={(e) => {
-                setDraggingTrackId(track.id)
-                setDragItemOffset(e.currentTarget.getBoundingClientRect().height + 8)
-                setDragPreview({
-                  title,
-                  subtitle,
-                  x: e.clientX,
-                  y: e.clientY,
-                  rotate: 0,
-                })
-                if (emptyDragImageRef.current) {
-                  e.dataTransfer.setDragImage(emptyDragImageRef.current, 0, 0)
-                }
-                e.dataTransfer.effectAllowed = "move"
-                e.dataTransfer.setData("text/plain", track.id)
-              }}
-              onDrag={(e) => {
-                if (e.clientX === 0 && e.clientY === 0) return
-                const now = performance.now()
-                const motion = dragMotionRef.current
-                if (!motion.lastTs) {
+            return (
+              <li
+                key={track.id}
+                data-index={index}
+                className={`queue-item ${isActive ? "queue-item--active" : ""} ${
+                  isDraggingSource ? "queue-item--dragging-source" : ""
+                }`}
+                style={shiftY !== 0 ? { transform: `translateY(${shiftY}px)` } : undefined}
+                draggable
+                onDragStart={(e) => {
+                  setDraggingTrackId(track.id)
+                  setDragItemOffset(e.currentTarget.getBoundingClientRect().height + 8)
+                  setDragPreview({
+                    title,
+                    subtitle,
+                    x: e.clientX,
+                    y: e.clientY,
+                    rotate: 0,
+                  })
+                  if (emptyDragImageRef.current) {
+                    e.dataTransfer.setDragImage(emptyDragImageRef.current, 0, 0)
+                  }
+                  e.dataTransfer.effectAllowed = "move"
+                  e.dataTransfer.setData("text/plain", track.id)
+                }}
+                onDrag={(e) => {
+                  if (e.clientX === 0 && e.clientY === 0) return
+                  const now = performance.now()
+                  const motion = dragMotionRef.current
+                  if (!motion.lastTs) {
+                    motion.lastX = e.clientX
+                    motion.lastY = e.clientY
+                    motion.lastTs = now
+                  }
+                  const dt = Math.max(1, now - motion.lastTs)
+                  const dx = e.clientX - motion.lastX
+                  const dy = e.clientY - motion.lastY
+                  const rawVx = dx / dt
+                  const rawVy = dy / dt
+                  motion.vx = motion.vx * 0.75 + rawVx * 0.25
+                  motion.vy = motion.vy * 0.75 + rawVy * 0.25
                   motion.lastX = e.clientX
                   motion.lastY = e.clientY
                   motion.lastTs = now
-                }
-                const dt = Math.max(1, now - motion.lastTs)
-                const dx = e.clientX - motion.lastX
-                const dy = e.clientY - motion.lastY
-                const rawVx = dx / dt
-                const rawVy = dy / dt
-                motion.vx = motion.vx * 0.75 + rawVx * 0.25
-                motion.vy = motion.vy * 0.75 + rawVy * 0.25
-                motion.lastX = e.clientX
-                motion.lastY = e.clientY
-                motion.lastTs = now
-                const rotate = Math.max(-7, Math.min(7, motion.vx * 28 + motion.vy * 6))
-                setDragPreview((prev) =>
-                  prev
-                    ? {
-                        ...prev,
-                        x: e.clientX,
-                        y: e.clientY,
-                        rotate,
-                      }
-                    : prev
-                )
-              }}
-              onDragEnd={() => {
-                setDraggingTrackId(null)
-                setHoverInsertIndex(null)
-                setDragPreview(null)
-                setDragItemOffset(0)
-                dragMotionRef.current = {
-                  lastX: 0,
-                  lastY: 0,
-                  lastTs: 0,
-                  vx: 0,
-                  vy: 0,
-                }
-              }}
-            >
-              <div className="queue-item-main">
-                <span className="queue-index">{index + 1}.</span>
-                <div className="queue-track-text">
-                  {isActive && <p className="queue-now-playing-tag">Now Playing</p>}
-                  <p className="queue-track-title">{title}</p>
-                  {subtitle && <p className="queue-track-subtitle">{subtitle}</p>}
+                  const rotate = Math.max(-7, Math.min(7, motion.vx * 28 + motion.vy * 6))
+                  setDragPreview((prev) =>
+                    prev
+                      ? {
+                          ...prev,
+                          x: e.clientX,
+                          y: e.clientY,
+                          rotate,
+                        }
+                      : prev
+                  )
+                }}
+                onDragEnd={() => {
+                  setDraggingTrackId(null)
+                  setHoverInsertIndex(null)
+                  setDragPreview(null)
+                  setDragItemOffset(0)
+                  dragMotionRef.current = {
+                    lastX: 0,
+                    lastY: 0,
+                    lastTs: 0,
+                    vx: 0,
+                    vy: 0,
+                  }
+                }}
+              >
+                <div className="queue-item-main">
+                  <span className="queue-index">{index + 1}.</span>
+                  <div className="queue-track-text">
+                    {isActive && <p className="queue-now-playing-tag">Now Playing</p>}
+                    <p className="queue-track-title">{title}</p>
+                    {subtitle && <p className="queue-track-subtitle">{subtitle}</p>}
+                  </div>
+                  {track.status === "loading" && <span className="queue-track-status">Loading…</span>}
+                  {track.status === "error" && (
+                    <span className="queue-track-status queue-track-status--error">Metadata error</span>
+                  )}
                 </div>
-                {track.status === "loading" && <span className="queue-track-status">Loading…</span>}
-                {track.status === "error" && (
-                  <span className="queue-track-status queue-track-status--error">Metadata error</span>
-                )}
-              </div>
-              <div className="queue-item-actions">
-                <button type="button" onClick={() => onPlayTrack(track.id)} aria-label={`Play ${title}`}>
-                  Play
-                </button>
-                <button
-                  type="button"
-                  onClick={() => onMoveUp(track.id)}
-                  disabled={index === 0}
-                  aria-label="Move up"
-                >
-                  ↑
-                </button>
-                <button
-                  type="button"
-                  onClick={() => onMoveDown(track.id)}
-                  disabled={index === queue.length - 1}
-                  aria-label="Move down"
-                >
-                  ↓
-                </button>
-                <button
-                  type="button"
-                  onClick={() => onRemoveTrack(track.id)}
-                  aria-label={`Remove ${title} from queue`}
-                >
-                  Remove
-                </button>
-              </div>
-            </li>
-          )
-        })}
-      </ol>
-      {dragPreview && (
+                <div className="queue-item-actions">
+                  <button
+                    type="button"
+                    onClick={() => onPlayTrack(track.id)}
+                    aria-label={`Play ${title}`}
+                    title={`Play ${title}`}
+                  >
+                    ▶
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => onMoveUp(track.id)}
+                    disabled={index === 0}
+                    aria-label="Move up"
+                  >
+                    ↑
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => onMoveDown(track.id)}
+                    disabled={index === queue.length - 1}
+                    aria-label="Move down"
+                  >
+                    ↓
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => onRemoveTrack(track.id)}
+                    aria-label={`Remove ${title} from queue`}
+                  >
+                    Remove
+                  </button>
+                </div>
+              </li>
+            )
+          })}
+        </ol>
+      </div>
+      {!isCollapsed && dragPreview && (
         <div
           className="queue-drag-floating"
           style={{

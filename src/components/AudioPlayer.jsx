@@ -239,121 +239,126 @@ function AudioPlayer({
   if (!audioUrl) return null
 
   return (
-    <section className="player">
-      <div className="player-controls">
-        <button
-          className="player-btn player-btn--icon"
-          type="button"
-          onClick={restartTrack}
-          aria-label="Restart track"
-          title="Restart"
-        >
-          ⏮
-        </button>
-        <button
-          className={`player-btn player-btn--primary player-btn--icon ${isPlaying ? "player-btn--active" : ""}`}
-          type="button"
-          onClick={togglePlay}
-          aria-label={isPlaying ? "Pause" : "Play"}
-          aria-pressed={isPlaying}
-          title={isPlaying ? "Pause (Space)" : "Play (Space)"}
-        >
-          {isPlaying ? "⏸" : "▶"}
-        </button>
-        <button
-          className={`player-btn player-btn--icon player-shuffle-btn ${
-            isShuffleOn ? "player-btn--active" : ""
-          }`}
-          type="button"
-          onClick={onShuffleToggle}
-          aria-pressed={isShuffleOn}
-          aria-label={`Shuffle ${isShuffleOn ? "on" : "off"}`}
-          title={isShuffleOn ? "Shuffle on" : "Shuffle off"}
-        >
-          ⇄
-        </button>
-        <button
-          className="player-btn player-btn--icon"
-          type="button"
-          onClick={skipToEnd}
-          aria-label="Skip to end"
-          title="Skip to end"
-        >
-          ⏭
-        </button>
-        <button
-          className="player-btn player-btn--icon"
-          type="button"
-          onClick={onPreviousTrack}
-          disabled={!hasPreviousTrack}
-          aria-label="Play previous track"
-          title="Previous track (P)"
-        >
-          ↶
-        </button>
-        <button
-          className="player-btn player-btn--icon"
-          type="button"
-          onClick={onNextTrack}
-          disabled={!hasNextTrack}
-          aria-label="Play next track"
-          title="Next track (N)"
-        >
-          ↷
-        </button>
-        <button
-          className={`player-btn player-btn--icon player-repeat-btn ${
-            repeatMode !== "off" ? "player-btn--active" : ""
-          }`}
-          type="button"
-          onClick={cycleRepeatMode}
-          aria-pressed={repeatMode !== "off"}
-          aria-label={`Repeat mode: ${repeatMode === "off" ? "off" : repeatMode === "one" ? "one" : "all"}`}
-          title={
-            repeatMode === "off"
-              ? "Repeat off"
-              : repeatMode === "one"
-                ? "Repeat one"
-                : "Repeat all"
-          }
-        >
-          {repeatMode === "one" ? "↻1" : "↻"}
-        </button>
-
-
+    <section className="player player--stage">
+      <div className="player-top-row">
+        <div className="player-side-controls">
+          <button
+            className={`player-btn player-btn--icon player-shuffle-btn ${
+              isShuffleOn ? "player-btn--active" : ""
+            }`}
+            type="button"
+            onClick={onShuffleToggle}
+            aria-pressed={isShuffleOn}
+            aria-label={`Shuffle ${isShuffleOn ? "on" : "off"}`}
+            title={isShuffleOn ? "Shuffle on" : "Shuffle off"}
+          >
+            ⇄
+          </button>
+          <button
+            className="player-btn player-btn--icon"
+            type="button"
+            onClick={onPreviousTrack}
+            disabled={!hasPreviousTrack}
+            aria-label="Play previous track"
+            title="Previous track (P)"
+          >
+            ↶
+          </button>
+        </div>
+        <div className="player-transport-controls">
+          <button
+            className="player-btn player-btn--icon"
+            type="button"
+            onClick={restartTrack}
+            aria-label="Restart track"
+            title="Restart"
+          >
+            ⏮
+          </button>
+          <button
+            className={`player-btn player-btn--primary player-btn--icon ${
+              isPlaying ? "player-btn--active" : ""
+            }`}
+            type="button"
+            onClick={togglePlay}
+            aria-label={isPlaying ? "Pause" : "Play"}
+            aria-pressed={isPlaying}
+            title={isPlaying ? "Pause (Space)" : "Play (Space)"}
+          >
+            {isPlaying ? "⏸" : "▶"}
+          </button>
+          <button
+            className="player-btn player-btn--icon"
+            type="button"
+            onClick={skipToEnd}
+            aria-label="Skip to end"
+            title="Skip to end"
+          >
+            ⏭
+          </button>
+        </div>
+        <div className="player-side-controls player-side-controls--right">
+          <button
+            className="player-btn player-btn--icon"
+            type="button"
+            onClick={onNextTrack}
+            disabled={!hasNextTrack}
+            aria-label="Play next track"
+            title="Next track (N)"
+          >
+            ↷
+          </button>
+          <button
+            className={`player-btn player-btn--icon player-repeat-btn ${
+              repeatMode !== "off" ? "player-btn--active" : ""
+            }`}
+            type="button"
+            onClick={cycleRepeatMode}
+            aria-pressed={repeatMode !== "off"}
+            aria-label={`Repeat mode: ${
+              repeatMode === "off" ? "off" : repeatMode === "one" ? "one" : "all"
+            }`}
+            title={
+              repeatMode === "off"
+                ? "Repeat off"
+                : repeatMode === "one"
+                  ? "Repeat one"
+                  : "Repeat all"
+            }
+          >
+            {repeatMode === "one" ? "↻1" : "↻"}
+          </button>
+          <label className="player-volume player-volume--compact">
+            <span aria-hidden="true">🔊</span>
+            <input
+              type="range"
+              min="0"
+              max="1"
+              step="0.01"
+              value={volume}
+              aria-label="Volume"
+              onChange={handleVolume}
+            />
+          </label>
+        </div>
       </div>
-
-      <span className="player-time">{formatTime(currentTime)}</span>
-      <input
-        className="player-seek"
-        type="range"
-        min="0"
-        max={duration || 0}
-        step="0.01"
-        aria-label="Seek position"
-        value={currentTime}
-        onChange={handleSeek}
-      />
-      <span className="player-time">{formatTime(duration)}</span>
-
-      <label className="player-volume">
-        Vol
+      <div className="player-progress-row">
+        <span className="player-time">{formatTime(currentTime)}</span>
         <input
+          className="player-seek"
           type="range"
           min="0"
-          max="1"
+          max={duration || 0}
           step="0.01"
-          value={volume}
-          aria-label="Volume"
-          onChange={handleVolume}
+          aria-label="Seek position"
+          value={currentTime}
+          onChange={handleSeek}
         />
-      </label>
+        <span className="player-time">{formatTime(duration)}</span>
+      </div>
       <p className="player-shortcuts">
-        Shortcuts: Space play/pause, ←/→ seek, ↑/↓ volume, M mute, P/N 
-      previous/next, S shuffle, R repeat
+        Shortcuts: Space play/pause, ←/→ seek, ↑/↓ volume, M mute, P/N previous/next, S shuffle, R repeat
       </p>
-
-
     </section>
   )
 }

@@ -130,13 +130,19 @@ function Visualizer({ analyzerData, mode = "bars", settings }) {
     const singleColorRgb = hexToRgb(singleColor)
 
     function resizeCanvas() {
-      const dpr = window.devicePixelRatio || 1
-      const width = canvas.clientWidth
-      const height = canvas.clientHeight
-      canvas.width = Math.floor(width * dpr)
-      canvas.height = Math.floor(height * dpr)
-      ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
-    }
+        const dpr = window.devicePixelRatio || 1
+        const width = canvas.clientWidth
+        const height = canvas.clientHeight
+        const nextWidth = Math.round(width * dpr)
+        const nextHeight = Math.round(height * dpr)
+        if (canvas.width !== nextWidth || canvas.height !== nextHeight) {
+          canvas.width = nextWidth
+          canvas.height = nextHeight
+        }
+        // Reset then apply DPR transform to avoid compounding transforms.
+        ctx.setTransform(1, 0, 0, 1, 0, 0)
+        ctx.scale(dpr, dpr)
+      }
 
     function draw(frameTime) {
       // Track frame-to-frame time so hue animation speed is consistent.
@@ -149,6 +155,7 @@ function Visualizer({ analyzerData, mode = "bars", settings }) {
       }
       const animatedHueShift = (hueShift + cycleHueOffsetRef.current) % 360
     
+      resizeCanvas()
       analyser.getByteFrequencyData(dataArray)
 
       const width = canvas.clientWidth
@@ -199,8 +206,19 @@ function Visualizer({ analyzerData, mode = "bars", settings }) {
         }
       } else {
         const cx = width / 2
-        const cy = height / 2
-        const baseRadius = Math.min(width, height) * 0.18
+        // Zoom-aware vertical anchor: compensate when browser zoom > 100%.
+        const zoomScale = window.visualViewport?.scale || 1
+        const zoomShiftUp = Math.max(0, zoomScale - 1) * (height * 0.2)
+        // Start from geometric center, then shift upward as zoom increases.
+        const cy = height / 2 - zoomShiftUp
+        const inset = glow * 2 + 22
+        const maxRadiusX = Math.max(36, width / 2 - inset)
+        const maxRadiusTop = Math.max(36, cy - inset)
+        const maxRadiusBottom = Math.max(36, height - cy - inset)
+        const maxReach = Math.min(maxRadiusX, maxRadiusTop, maxRadiusBottom)
+        const baseRadius = maxReach * 0.36
+        const maxLineLength = Math.max(14, maxReach - baseRadius)
+
         const halfBars = Math.max(2, Math.floor(safeBarCount / 2))
         const densityProgress = (safeBarCount - MIN_BAR_COUNT) / (MAX_BAR_COUNT - MIN_BAR_COUNT)
         // Expand hue span toward 360 as density increases to hide radial seam.
@@ -219,7 +237,8 @@ function Visualizer({ analyzerData, mode = "bars", settings }) {
           smoothedDataRef.current[i] = smooth
 
           const angle = (i / halfBars) * Math.PI
-          const length = 20 + smooth * (Math.min(width, height) * 0.28)
+          const normalized = Math.min(Math.max(smooth, 0), 1)
+          const length = 6 + normalized * (maxLineLength - 6)
           const progress = i / halfBars
           const mainColor = getVisualizerColor({
             colorMode,

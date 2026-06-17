@@ -277,18 +277,20 @@ function handleImportVisualizerPreset(e) {
     <section className="customizer">
       <h2>Visualizer Controls</h2>
 
-      <label>
-        Color Mode
-        <select
-          value={settings.colorMode}
-          onChange={(e) => update("colorMode", e.target.value)}
-          disabled={disabled}
-        >
-          <option value="rainbow">Rainbow</option>
-          <option value="single">Single Color</option>
-          <option value="palette">Palette</option>
-        </select>
-      </label>
+      <details className="customizer-section" open>
+        <summary>Color & Presets</summary>
+        <label>
+          Color Mode
+          <select
+            value={settings.colorMode}
+            onChange={(e) => update("colorMode", e.target.value)}
+            disabled={disabled}
+          >
+            <option value="rainbow">Rainbow</option>
+            <option value="single">Single Color</option>
+            <option value="palette">Palette</option>
+          </select>
+        </label>
 
       {settings.colorMode === "single" && (
         <label>
@@ -464,25 +466,6 @@ function handleImportVisualizerPreset(e) {
               style={{ display: "none" }}
             />
 
-            <button type="button" onClick={handleExportVisualizerPreset} disabled={disabled}>
-              Export Full Preset
-            </button>
-            
-            <button
-              type="button"
-              onClick={() => importFullPresetInputRef.current?.click()}
-              disabled={disabled}
-            >
-              Import Full Preset
-            </button>
-            
-            <input
-              ref={importFullPresetInputRef}
-              type="file"
-              accept=".json,application/json"
-              onChange={handleImportVisualizerPreset}
-              style={{ display: "none" }}
-            />
           </div>
           {presetIoMessage && (
             <p className="preset-io-message" role="status" aria-live="polite">
@@ -493,87 +476,106 @@ function handleImportVisualizerPreset(e) {
           <small>First/last stops are locked at 0% and 100%. Max 8 stops.</small>
         </div>
       )}
+      </details>
 
-      <label>
-        Intensity: {settings.intensity.toFixed(2)}
-        <input
-          type="range"
-          min="0.4"
-          max="2"
-          step="0.01"
-          value={settings.intensity}
-          onChange={(e) => update("intensity", Number(e.target.value))}
+      <div className="full-preset-io">
+        <button type="button" onClick={handleExportVisualizerPreset} disabled={disabled}>
+          Export Full Preset
+        </button>
+        <button
+          type="button"
+          onClick={() => importFullPresetInputRef.current?.click()}
           disabled={disabled}
+        >
+          Import Full Preset
+        </button>
+        <input
+          ref={importFullPresetInputRef}
+          type="file"
+          accept=".json,application/json"
+          onChange={handleImportVisualizerPreset}
+          style={{ display: "none" }}
         />
-      </label>
+      </div>
 
-      {settings.colorMode === "rainbow" && (
-        <>
-          <label>
-            Hue Shift: {settings.hueShift}
-            <input
-              type="range"
-              min="0"
-              max="360"
-              step="1"
-              value={settings.hueShift}
-              onChange={(e) => update("hueShift", Number(e.target.value))}
-              disabled={disabled}
-            />
-          </label>
-
-          <label className="customizer-toggle">
-            <span>Auto-cycle hues</span>
-            <input
-              type="checkbox"
-              checked={settings.autoCycle}
-              onChange={(e) => update("autoCycle", e.target.checked)}
-              disabled={disabled}
-            />
-          </label>
-
-          {settings.autoCycle && (
+      <details className="customizer-section">
+        <summary>Motion & Density</summary>
+        <label>
+          Intensity: {settings.intensity.toFixed(2)}
+          <input
+            type="range"
+            min="0.4"
+            max="2"
+            step="0.01"
+            value={settings.intensity}
+            onChange={(e) => update("intensity", Number(e.target.value))}
+            disabled={disabled}
+          />
+        </label>
+        {settings.colorMode === "rainbow" && (
+          <>
             <label>
-              Cycle Speed: {settings.cycleSpeed}°/s
+              Hue Shift: {settings.hueShift}
               <input
                 type="range"
-                min="5"
-                max="240"
+                min="0"
+                max="360"
                 step="1"
-                value={settings.cycleSpeed}
-                onChange={(e) => update("cycleSpeed", Number(e.target.value))}
+                value={settings.hueShift}
+                onChange={(e) => update("hueShift", Number(e.target.value))}
                 disabled={disabled}
               />
             </label>
-          )}
-        </>
-      )}
-
-      <label>
-        Glow: {settings.glow}
-        <input
-          type="range"
-          min="0"
-          max="30"
-          step="1"
-          value={settings.glow}
-          onChange={(e) => update("glow", Number(e.target.value))}
-          disabled={disabled}
-        />
-      </label>
-
-      <label>
-        Bar Density: {settings.barCount}
-        <input
-          type="range"
-          min="32"
-          max="160"
-          step="1"
-          value={settings.barCount}
-          onChange={(e) => update("barCount", Number(e.target.value))}
-          disabled={disabled}
-        />
-      </label>
+            <label className="customizer-toggle">
+              <span>Auto-cycle hues</span>
+              <input
+                type="checkbox"
+                checked={settings.autoCycle}
+                onChange={(e) => update("autoCycle", e.target.checked)}
+                disabled={disabled}
+              />
+            </label>
+            {settings.autoCycle && (
+              <label>
+                Cycle Speed: {settings.cycleSpeed}°/s
+                <input
+                  type="range"
+                  min="5"
+                  max="240"
+                  step="1"
+                  value={settings.cycleSpeed}
+                  onChange={(e) => update("cycleSpeed", Number(e.target.value))}
+                  disabled={disabled}
+                />
+              </label>
+            )}
+          </>
+        )}
+        <label>
+          Glow: {settings.glow}
+          <input
+            type="range"
+            min="0"
+            max="30"
+            step="1"
+            value={settings.glow}
+            onChange={(e) => update("glow", Number(e.target.value))}
+            disabled={disabled}
+          />
+        </label>
+        <label>
+          Bar Density: {settings.barCount}
+          <input
+            type="range"
+            min="32"
+            max="160"
+            step="1"
+            value={settings.barCount}
+            onChange={(e) => update("barCount", Number(e.target.value))}
+            disabled={disabled}
+          />
+        </label>
+      </details>
     </section>
   )
 }
