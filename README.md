@@ -1,4 +1,4 @@
-# Audio Visualizer
+# AudiViz
 
 Browser-based audio visualizer built with React, Vite, Canvas, and the Web Audio API.
 
@@ -37,3 +37,27 @@ npm run build
 - Linting and automated tests
 - CI workflow for lint/test/build on pushes and PRs
 - Pull request template for consistent reviews
+
+## UI QA Notes (Phase 6)
+
+### Verified
+
+- Responsive desktop layout is stable across common laptop/desktop sizes.
+- Queue, center stage, and customizer panels avoid overlap/collision at normal zoom
+  levels.
+- Keyboard controls are working:
+  - `Space` play/pause
+  - `←/→` seek
+  - `↑/↓` volume
+  - `M` mute
+  - `P/N` previous/next
+  - `S` shuffle
+  - `R` repeat
+- Focus-visible states are present on interactive controls.
+- Queue now-playing highlight and icon tooltips are active.
+
+### Known issue
+
+- Radial visualizer vertical centering can appear low at some browser zoom levels.
+- Bars mode is unaffected.
+- This is tracked for a later focused canvas/zoom pass.

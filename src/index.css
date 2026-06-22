@@ -1408,3 +1408,212 @@ background: #151515;
     grid-template-columns: 1fr;
   }
 }
+
+/* =========================================
+    Phase 6 - Final Visual Polish Foundation
+    ========================================= */
+:root {
+  --ui-radius-sm: 8px;
+  --ui-radius-md: 10px;
+  --ui-radius-lg: 12px;
+  --ui-border: #303030;
+  --ui-border-soft: #262626;
+  --ui-surface-1: #101010;
+  --ui-surface-2: #141414;
+  --ui-surface-3: #171717;
+  --ui-text-1: #f1f1f1;
+  --ui-text-2: #cfcfcf;
+  --ui-text-3: #9a9a9a;
+  --ui-focus: #7c4dff;
+}
+/* Unified panel surfaces */
+.shell-left .queue-panel,
+.shell-center,
+.shell-right .customizer,
+.shell-center .player,
+.shell-center .now-playing-panel,
+.shell-center .song-info,
+.shell-center .visualizer-wrapper {
+  border-color: var(--ui-border);
+  border-radius: var(--ui-radius-md);
+}
+.shell-center {
+  background: var(--ui-surface-1);
+}
+.shell-center .song-info,
+.shell-center .now-playing-panel,
+.shell-center .player,
+.shell-left .queue-panel,
+.shell-right .customizer {
+  background: var(--ui-surface-2);
+}
+.shell-center .visualizer-wrapper {
+  background: #0f0f0f;
+  border-radius: var(--ui-radius-lg);
+}
+/* Text hierarchy consistency */
+.song-title,
+.queue-track-title,
+.now-playing-line {
+  color: var(--ui-text-1);
+}
+.song-meta,
+.queue-track-subtitle,
+.player-time,
+.customizer label,
+.customizer small,
+.privacy-note,
+.player-shortcuts {
+  color: var(--ui-text-3);
+}
+/* Unified interactive controls */
+.player-btn,
+.queue-action-btn,
+.queue-item-actions button,
+.queue-add-btn,
+.reset-ui-btn,
+.customizer button,
+.customizer select,
+.customizer input[type="text"],
+.customizer input[type="color"] {
+  border-radius: var(--ui-radius-sm);
+  border: 1px solid var(--ui-border);
+  background: var(--ui-surface-3);
+  color: var(--ui-text-1);
+}
+/* Shared hover behavior */
+.player-btn:hover:not(:disabled),
+.queue-action-btn:hover:not(:disabled),
+.queue-item-actions button:hover:not(:disabled),
+.queue-add-btn:hover,
+.customizer button:hover:not(:disabled) {
+  border-color: #5a5a5a;
+  background: #222;
+}
+/* Shared focus-visible ring */
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+summary:focus-visible,
+label:focus-visible {
+  outline: 2px solid var(--ui-focus);
+  outline-offset: 2px;
+}
+/* Slightly cleaner section separation */
+.customizer .customizer-section {
+  border-color: var(--ui-border-soft);
+  background: #111;
+}
+
+/* Phase 6 polish - now playing pulse */
+@keyframes nowPlayingPulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(124, 77, 255, 0.18);
+  }
+  50% {
+    box-shadow: 0 0 0 6px rgba(124, 77, 255, 0);
+  }
+}
+.shell-left .queue-item--active {
+  position: relative;
+  border-color: #7c4dff;
+  background: #18131f;
+  animation: nowPlayingPulse 2.2s ease-in-out infinite;
+}
+.shell-left .queue-item--active::before {
+  content: "";
+  position: absolute;
+  left: -1px;
+  top: 8px;
+  bottom: 8px;
+  width: 3px;
+  border-radius: 999px;
+  background: linear-gradient(180deg, #7c4dff, #00d4ff);
+  opacity: 0.95;
+}
+@media (prefers-reduced-motion: reduce) {
+  .shell-left .queue-item--active {
+    animation: none;
+  }
+}
+
+/* Phase 6 polish - custom tooltips for icon controls */
+.has-tooltip {
+  position: relative;
+}
+
+.has-tooltip::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  left: 50%;
+  bottom: calc(100% + 8px);
+  transform: translateX(-50%) translateY(2px);
+  background: #0f0f0f;
+  color: #e8e8e8;
+  border: 1px solid #3a3a3a;
+  border-radius: 6px;
+  padding: 4px 7px;
+  font-size: 11px;
+  line-height: 1;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 100ms ease, transform 100ms ease;
+  z-index: 20;
+}
+
+.has-tooltip:hover::after,
+.has-tooltip:focus-visible::after {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
+/* Phase 6 polish - global spacing rhythm pass */
+:root {
+  --space-1: 4px;
+  --space-2: 6px;
+  --space-3: 8px;
+  --space-4: 10px;
+  --space-5: 12px;
+}
+/* Apply a consistent 6/8/10 rhythm in main panels */
+.shell-left .queue-panel,
+.shell-center,
+.shell-right .customizer {
+  gap: var(--space-3);
+}
+.shell-left .queue-header,
+.shell-left .queue-body,
+.shell-center .player,
+.shell-center .now-playing-panel,
+.shell-right .customizer-section {
+  gap: var(--space-2);
+}
+.shell-left .queue-header-actions,
+.shell-left .queue-item-actions,
+.shell-center .player-top-row,
+.shell-center .player-transport-controls,
+.shell-center .player-progress-row,
+.customizer .preset-io,
+.customizer .full-preset-io {
+  gap: var(--space-2);
+}
+/* Tighten high-frequency micro spacing */
+.shell-left .queue-list {
+  gap: var(--space-2);
+}
+.shell-right .customizer label {
+  gap: var(--space-1);
+}
+.shell-center .mode-chip {
+  padding: 2px 8px;
+}
+/* Slightly denser on shorter desktop heights */
+@media (max-height: 820px) and (min-width: 1081px) {
+  .shell-left .queue-panel,
+  .shell-center,
+  .shell-right .customizer {
+    gap: var(--space-2);
+  }
+}

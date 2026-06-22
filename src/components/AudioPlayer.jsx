@@ -245,7 +245,8 @@ function AudioPlayer({
           <button
             className={`player-btn player-btn--icon player-shuffle-btn ${
               isShuffleOn ? "player-btn--active" : ""
-            }`}
+            } has-tooltip`}
+            data-tooltip={isShuffleOn ? "Shuffle on" : "Shuffle off"}
             type="button"
             onClick={onShuffleToggle}
             aria-pressed={isShuffleOn}
@@ -255,7 +256,8 @@ function AudioPlayer({
             ⇄
           </button>
           <button
-            className="player-btn player-btn--icon"
+            className="player-btn player-btn--icon has-tooltip"
+            data-tooltip="Previous track"
             type="button"
             onClick={onPreviousTrack}
             disabled={!hasPreviousTrack}
@@ -267,7 +269,8 @@ function AudioPlayer({
         </div>
         <div className="player-transport-controls">
           <button
-            className="player-btn player-btn--icon"
+            className="player-btn player-btn--icon has-tooltip"
+            data-tooltip="Restart"
             type="button"
             onClick={restartTrack}
             aria-label="Restart track"
@@ -278,7 +281,8 @@ function AudioPlayer({
           <button
             className={`player-btn player-btn--primary player-btn--icon ${
               isPlaying ? "player-btn--active" : ""
-            }`}
+            } has-tooltip`}
+            data-tooltip={isPlaying ? "Pause" : "Play"}
             type="button"
             onClick={togglePlay}
             aria-label={isPlaying ? "Pause" : "Play"}
@@ -288,7 +292,8 @@ function AudioPlayer({
             {isPlaying ? "⏸" : "▶"}
           </button>
           <button
-            className="player-btn player-btn--icon"
+            className="player-btn player-btn--icon has-tooltip"
+            data-tooltip="Skip to end"
             type="button"
             onClick={skipToEnd}
             aria-label="Skip to end"
@@ -299,7 +304,8 @@ function AudioPlayer({
         </div>
         <div className="player-side-controls player-side-controls--right">
           <button
-            className="player-btn player-btn--icon"
+            className="player-btn player-btn--icon has-tooltip"
+            data-tooltip="Next track"
             type="button"
             onClick={onNextTrack}
             disabled={!hasNextTrack}
@@ -311,7 +317,14 @@ function AudioPlayer({
           <button
             className={`player-btn player-btn--icon player-repeat-btn ${
               repeatMode !== "off" ? "player-btn--active" : ""
-            }`}
+            } has-tooltip`}
+            data-tooltip={
+              repeatMode === "off"
+                ? "Repeat off"
+                : repeatMode === "one"
+                  ? "Repeat one"
+                  : "Repeat all"
+            }
             type="button"
             onClick={cycleRepeatMode}
             aria-pressed={repeatMode !== "off"}

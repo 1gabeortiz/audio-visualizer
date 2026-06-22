@@ -234,6 +234,8 @@ function QueuePanel({
                 <div className="queue-item-actions">
                   <button
                     type="button"
+                    className="has-tooltip"
+                    data-tooltip={`Play ${title}`}
                     onClick={() => onPlayTrack(track.id)}
                     aria-label={`Play ${title}`}
                     title={`Play ${title}`}
@@ -242,6 +244,8 @@ function QueuePanel({
                   </button>
                   <button
                     type="button"
+                    className="has-tooltip"
+                    data-tooltip="Move up"
                     onClick={() => onMoveUp(track.id)}
                     disabled={index === 0}
                     aria-label="Move up"
@@ -250,6 +254,8 @@ function QueuePanel({
                   </button>
                   <button
                     type="button"
+                    className="has-tooltip"
+                    data-tooltip="Move down"
                     onClick={() => onMoveDown(track.id)}
                     disabled={index === queue.length - 1}
                     aria-label="Move down"

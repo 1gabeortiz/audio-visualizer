@@ -487,7 +487,7 @@ function App() {
   return (
     <main className="app">
       <section className="app-top">
-        <h1>Audio Visualizer</h1>
+        <h1>AudiViz</h1>
         <FileUpload onFilesSelect={enqueueFiles} />
         {queueStatus && (
           <p

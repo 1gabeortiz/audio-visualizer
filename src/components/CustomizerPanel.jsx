@@ -447,7 +447,7 @@ function handleImportVisualizerPreset(e) {
           {/* Export downloads palette.json; Import reads a previously exported file */}
           <div className="preset-io">
             <button type="button" onClick={handleExportPalette} disabled={disabled}>
-              Export Palette Preset
+              Export Palette
             </button>
 
             <button
@@ -455,7 +455,7 @@ function handleImportVisualizerPreset(e) {
               onClick={() => importInputRef.current?.click()}
               disabled={disabled}
             >
-              Import Palette Preset
+              Import Palette
             </button>
 
             <input
