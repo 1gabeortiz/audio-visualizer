@@ -2,29 +2,51 @@
 
 A browser-based music visualizer built with React, Vite, Canvas, and the Web Audio API.
 
+[![CI](https://img.shields.io/badge/CI-lint%20%7C%20test%20%7C%20build-6a5acd)](https://github.com/1gabeortiz/AudiViz/actions)
+
 ## Live Demo
 
-- **Live app:** 'https://audi-f33vlvhic-1gabeortizs-projects.vercel.app/'
+- **Live app:** [AudiViz](https://audi-f33vlvhic-1gabeortizs-projects.vercel.app/)
 
-If you only want to try AudiViz, use the live link above (no local setup required).
+If you only want to try AudiViz, use the live demo link above (no local setup required).
 
-## What AudiViz Does
+![AudiViz Main Demo](./assets/demo-main.gif)
 
-- Upload one or more audio files (click, drag/drop, or queue add)
+## Table of Contents
+
+- [Features](#features)
+- [Tech Stack](#tech-stack)
+- [Privacy](#privacy)
+- [Quick Start](#quick-start)
+- [Keyboard Shortcuts](#keyboard-shortcuts)
+- [Scripts](#scripts)
+- [Deployment Notes](#deployment-notes)
+- [Known Issue](#known-issue)
+
+## Features
+
+- Upload one or more audio files (click, drag/drop, and add-to-queue)
 - Play music with custom controls and keyboard shortcuts
 - Visualize audio in bars or radial mode
 - Customize visuals (color mode, glow, density, motion)
 - Save/load palette presets and full visualizer presets
 - Manage playback queue (play now, reorder, remove, clear, keep current only)
 
-![](https://github.com/1gabeortiz/AudiViz/blob/main/audioviz.gif)
+![AudiViz Queue and Customizer Demo](./assets/demo-queue-customizer.gif)
 
+## Tech Stack
+
+- React
+- Vite
+- Web Audio API
+- HTML Canvas
+- ESLint + Vitest
 
 ## Privacy
 
 Audio files are processed **locally in your browser** and are not uploaded by AudiViz.
 
-## Quick Start (Local Development)
+## Quick Start
 
 ### Requirements
 
@@ -38,7 +60,7 @@ npm install
 npm run dev
 ```
 
-Open localhost URL shown in the terminal.
+Open the localhost URL shown in your terminal.
 
 ## Keyboard Shortcuts
 
@@ -72,9 +94,3 @@ npm run preview    # preview production build locally
 
 - Radial visualizer can appear slightly low at some browser zoom levels.
 - Bars mode is unaffected.
-
-## Project Workflow
-
-- Feature branches + pull requests
-- CI runs lint/test/build on pushes and PRs
-- PR template is included for consistent reviews
