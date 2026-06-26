@@ -17,7 +17,7 @@ If you only want to try AudiViz, use the live link above (no local setup require
 - Save/load palette presets and full visualizer presets
 - Manage playback queue (play now, reorder, remove, clear, keep current only)
 
-![](https://github.com/1gabeortiz/AudiViz/audiviz.gif)
+![](https://github.com/1gabeortiz/AudiViz/blob/main/audioviz.gif)
 
 
 ## Privacy
