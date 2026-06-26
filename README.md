@@ -1,63 +1,77 @@
 # AudiViz
 
-Browser-based audio visualizer built with React, Vite, Canvas, and the Web Audio API.
+A browser-based music visualizer built with React, Vite, Canvas, and the Web Audio API.
 
-## Current Features
+## Live Demo
 
-- Upload audio files (MP3/WAV) by click or drag/drop
-- Metadata extraction (title, artist, album, cover art)
-- Custom audio controls (play/pause, seek, volume, restart, skip to end)
-- Visualizer modes: bars + radial
-- Live visualizer controls: intensity, hue shift, glow, bar density
-- Color systems: rainbow, single color, and multi-stop palette gradients
-- Preset workflow: built-in presets, saved presets, JSON import/export
-- Full visualizer setting import/export as JSON
-- Privacy-first behavior: files are processed locally in the browser
+- **Live app:** `https://audi-f33vlvhic-1gabeortizs-projects.vercel.app/`
 
-## Run Locally
+If you only want to try AudiViz, use the live link above (no local setup required).
+
+## What AudiViz Does
+
+- Upload one or more audio files (click, drag/drop, or queue add)
+- Play music with custom controls and keyboard shortcuts
+- Visualize audio in bars or radial mode
+- Customize visuals (color mode, glow, density, motion)
+- Save/load palette presets and full visualizer presets
+- Manage playback queue (play now, reorder, remove, clear, keep current only)
+
+## Privacy
+
+Audio files are processed **locally in your browser** and are not uploaded by AudiViz.
+
+## Quick Start (Local Development)
+
+### Requirements
+
+- Node.js (LTS recommended)
+- npm
+
+### Run locally
 
 ```bash
 npm install
 npm run dev
 ```
 
-Open `http://localhost:5173`.
+Open localhost URL shown in the terminal.
 
-## Quality Checks
+## Keyboard Shortcuts
+
+- `Space` -> play/pause
+- `Left / Right` -> seek backward/forward
+- `Up / Down` -> volume up/down
+- `M` -> mute/unmute
+- `P / N` -> previous/next track
+- `S` -> shuffle toggle
+- `R` -> repeat mode cycle
+
+## Scripts
 
 ```bash
-npm run lint
-npm run test:run
-npm run build
+npm run dev        # start local dev server
+npm run lint       # lint code
+npm run test:run   # run tests once with coverage
+npm run build      # production build
+npm run preview    # preview production build locally
 ```
 
-## Professional Workflow in This Repo
+## Deployment Notes
+
+- Recommended platform: **Vercel** (Vite preset)
+- Build command: `npm run build`
+- Output directory: `dist`
+- Keep auto-deploy on `main` enabled
+- Keep preview deploys enabled for pull requests
+
+## Known Issue
+
+- Radial visualizer can appear slightly low at some browser zoom levels.
+- Bars mode is unaffected.
+
+## Project Workflow
 
 - Feature branches + pull requests
-- Linting and automated tests
-- CI workflow for lint/test/build on pushes and PRs
-- Pull request template for consistent reviews
-
-## UI QA Notes (Phase 6)
-
-### Verified
-
-- Responsive desktop layout is stable across common laptop/desktop sizes.
-- Queue, center stage, and customizer panels avoid overlap/collision at normal zoom
-  levels.
-- Keyboard controls are working:
-  - `Space` play/pause
-  - `←/→` seek
-  - `↑/↓` volume
-  - `M` mute
-  - `P/N` previous/next
-  - `S` shuffle
-  - `R` repeat
-- Focus-visible states are present on interactive controls.
-- Queue now-playing highlight and icon tooltips are active.
-
-### Known issue
-
-- Radial visualizer vertical centering can appear low at some browser zoom levels.
-- Bars mode is unaffected.
-- This is tracked for a later focused canvas/zoom pass.
+- CI runs lint/test/build on pushes and PRs
+- PR template is included for consistent reviews
