@@ -10,7 +10,7 @@ A browser-based music visualizer built with React, Vite, Canvas, and the Web Aud
 
 If you only want to try AudiViz, use the live demo link above (no local setup required).
 
-![AudiViz Main Demo](./assets/demo-main.gif)
+![AudiViz Main Demo](./demo-main.gif)
 
 ## Table of Contents
 
@@ -32,7 +32,7 @@ If you only want to try AudiViz, use the live demo link above (no local setup re
 - Save/load palette presets and full visualizer presets
 - Manage playback queue (play now, reorder, remove, clear, keep current only)
 
-![AudiViz Queue and Customizer Demo](./assets/demo-queue-customizer.gif)
+![AudiViz Queue and Customizer Demo](./demo-queue-customizer.gif)
 
 ## Tech Stack
 
