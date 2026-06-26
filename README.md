@@ -4,7 +4,7 @@ A browser-based music visualizer built with React, Vite, Canvas, and the Web Aud
 
 ## Live Demo
 
-- **Live app:** [https://audi-f33vlvhic-1gabeortizs-projects.vercel.app/](url)
+- **Live app:** 'https://audi-f33vlvhic-1gabeortizs-projects.vercel.app/'
 
 If you only want to try AudiViz, use the live link above (no local setup required).
 
